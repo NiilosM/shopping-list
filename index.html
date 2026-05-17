@@ -35,17 +35,15 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* Mobile specific tweaks */
         @media (max-width: 640px) {
             .btn-touch { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
-            input, select, button { font-size: 16px !important; } /* Prevents iOS zoom on focus */
+            input, select, button { font-size: 16px !important; }
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <!-- Error Alert -->
         <div id="error-banner" class="hidden mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-r-xl shadow-sm">
             <p class="font-bold">Connection Issue</p>
             <p id="error-message" class="text-sm">Details will appear here...</p>
@@ -68,7 +66,6 @@
             </div>
         </header>
 
-        <!-- Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
             <div class="glass-card p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                 <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Total Items</p>
@@ -84,40 +81,46 @@
             </div>
         </div>
 
-        <!-- Add/Edit Form -->
-        <div class="glass-card p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
-            <div class="flex justify-between items-center mb-4">
-                <h2 id="form-title" class="text-lg font-semibold text-slate-800">Add New Item</h2>
-                <button id="cancel-edit" class="hidden text-sm text-red-500 font-medium hover:underline px-2 py-1" onclick="resetForm()">Cancel Edit</button>
-            </div>
-            <form id="addItemForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input type="hidden" id="editRowIndex" value="">
-                <div class="md:col-span-1">
-                    <input type="text" id="newItemName" placeholder="What do you need?" required class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="glass-card p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="form-title" class="text-lg font-semibold text-slate-800">Add New Item</h2>
+                    <button id="cancel-edit" class="hidden text-sm text-red-500 font-medium hover:underline px-2 py-1" onclick="resetForm()">Cancel Edit</button>
                 </div>
-                <div class="w-full">
-                    <select id="newItemCategory" onchange="checkCustomCategory(this.value)" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
-                        <!-- Dynamically populated from JS -->
-                    </select>
-                    <div id="customCategoryInputWrapper" class="hidden mt-2 flex gap-2">
-                        <input type="text" id="customCategoryName" placeholder="Custom Category Name" class="flex-grow px-3 py-2 border border-slate-200 rounded-lg outline-none text-sm bg-white">
-                        <button type="button" onclick="saveCustomCategory()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold transition-colors btn-touch">Add</button>
-                        <button type="button" onclick="cancelCustomCategory()" class="text-slate-400 px-2 py-2 hover:text-slate-600 transition-colors">✕</button>
+                <form id="addItemForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="hidden" id="editRowIndex" value="">
+                    <div class="md:col-span-1">
+                        <input type="text" id="newItemName" placeholder="What do you need?" required class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                     </div>
+                    <div class="w-full">
+                        <select id="newItemCategory" onchange="checkCustomCategory(this.value)" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
+                            </select>
+                        <div id="customCategoryInputWrapper" class="hidden mt-2 flex gap-2">
+                            <input type="text" id="customCategoryName" placeholder="Category Name" class="flex-grow px-3 py-2 border border-slate-200 rounded-lg outline-none text-sm bg-white">
+                            <button type="button" onclick="saveCustomCategory()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold transition-colors btn-touch">Add</button>
+                            <button type="button" onclick="cancelCustomCategory()" class="text-slate-400 px-2 py-2 hover:text-slate-600 transition-colors">✕</button>
+                        </div>
+                    </div>
+                    <select id="newItemUrgency" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
+                        <option value="Now">Now</option>
+                        <option value="Soon">Soon</option>
+                        <option value="Later">Later</option>
+                    </select>
+                    <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
+                        <div id="btn-spinner" class="loader hidden"></div>
+                        <span id="btn-text">Add to Sheet</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl shadow-sm border border-slate-200 bg-slate-50/50">
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Custom Categories</h3>
+                <div id="customCategoriesList" class="space-y-2 max-h-[120px] overflow-y-auto pr-1 text-sm">
+                    <p class="text-slate-400 italic text-xs">No user categories added yet.</p>
                 </div>
-                <select id="newItemUrgency" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
-                    <option value="Now">Now</option>
-                    <option value="Soon">Soon</option>
-                    <option value="Later">Later</option>
-                </select>
-                <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
-                    <div id="btn-spinner" class="loader hidden"></div>
-                    <span id="btn-text">Add to Sheet</span>
-                </button>
-            </form>
+            </div>
         </div>
 
-        <!-- Search and Filters -->
         <div class="flex flex-col sm:flex-row gap-4 mb-4">
             <div class="relative flex-grow">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -133,7 +136,6 @@
             </select>
         </div>
 
-        <!-- Table -->
         <div class="glass-card rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[600px]">
@@ -147,23 +149,26 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100 bg-white">
-                        <!-- Data injected here -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        // Make sure to double check that this matches your actual deployed web app URL from Google Sheet
         const API_URL = 'https://script.google.com/macros/s/AKfycbyh6vANg0C6aF3r7qXH7NSqU79kMkEtrqN0JFkry9EZrBznbUwEjmHqzJHTvUMn8I6Crg/exec';
         
         let shoppingItems = [];
         let completedIds = new Set();
         let sortConfig = { key: null, direction: 'asc' };
         
-        // Initial setup of system categories
-        let defaultCategories = ['Grocery', 'Household', 'Tech', 'Personal Care', 'Kitchen'];
+        // System baseline categories
+        const systemCategories = ['Grocery', 'Household', 'Tech', 'Personal Care', 'Kitchen'];
+        // Separated array specifically tracking additions created by the user
+        let userCreatedCategories = JSON.parse(localStorage.getItem('user_categories')) || [];
+
+        // Priority weighting dictionary mapping for logical relational mathematical comparisons
+        const URGENCY_ORDER = { 'now': 0, 'soon': 1, 'later': 2 };
 
         async function fetchData() {
             const statusText = document.getElementById('status-text');
@@ -182,6 +187,16 @@
                 
                 if (result.status === "success") {
                     shoppingItems = result.data || [];
+                    
+                    // Automatically auto-import any values present on sheet that aren't system categories
+                    shoppingItems.forEach(item => {
+                        const cat = getRowValue(item, 'Category').trim();
+                        if (cat && !systemCategories.includes(cat) && !userCreatedCategories.includes(cat)) {
+                            userCreatedCategories.push(cat);
+                        }
+                    });
+                    saveUserCategoriesToMemory();
+                    
                     updateCategoryDropdowns();
                     renderTable();
                     if (statusText) statusText.textContent = 'Synced';
@@ -205,20 +220,16 @@
             return row[key] || row[key.toLowerCase()] || row[key.charAt(0).toUpperCase() + key.slice(1)] || '';
         }
 
+        function saveUserCategoriesToMemory() {
+            localStorage.setItem('user_categories', JSON.stringify(userCreatedCategories));
+        }
+
         function updateCategoryDropdowns() {
             const select = document.getElementById('newItemCategory');
+            const panelList = document.getElementById('customCategoriesList');
             if (!select) return;
 
-            const sheetCategories = new Set();
-            shoppingItems.forEach(item => {
-                const cat = getRowValue(item, 'Category');
-                if (cat && cat.trim() !== '') {
-                    sheetCategories.add(cat.trim());
-                }
-            });
-
-            // Combine starting/predefined, custom ones registered dynamically, and sheet categories
-            const allCategories = new Set([...defaultCategories, ...sheetCategories]);
+            const allCategories = new Set([...systemCategories, ...userCreatedCategories]);
             const currentVal = select.value;
             
             select.innerHTML = '';
@@ -229,20 +240,46 @@
                 select.appendChild(opt);
             });
             
-            // Add custom trigger option
             const addOpt = document.createElement('option');
             addOpt.value = "__NEW__";
             addOpt.className = "text-blue-600 font-semibold";
             addOpt.textContent = "+ Add Custom Category...";
             select.appendChild(addOpt);
             
-            // Restore selection if safe, otherwise default to first available option
             if (allCategories.has(currentVal)) {
                 select.value = currentVal;
             } else if (currentVal === "__NEW__") {
                 select.value = "__NEW__";
             } else {
-                select.value = defaultCategories[0];
+                select.value = systemCategories[0];
+            }
+
+            // Render custom side list manager view panel
+            if (panelList) {
+                panelList.innerHTML = '';
+                if (userCreatedCategories.length === 0) {
+                    panelList.innerHTML = `<p class="text-slate-400 italic text-xs">No custom categories added yet.</p>`;
+                } else {
+                    userCreatedCategories.forEach(cat => {
+                        const div = document.createElement('div');
+                        div.className = "flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-slate-700 font-medium";
+                        div.innerHTML = `
+                            <span>${cat}</span>
+                            <button type="button" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="Delete Category">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        `;
+                        panelList.appendChild(div);
+                    });
+                }
+            }
+        }
+
+        function deleteCategory(catName) {
+            if (confirm(`Delete the custom category "${catName}" from your selection list?`)) {
+                userCreatedCategories = userCreatedCategories.filter(c => c !== catName);
+                saveUserCategoriesToMemory();
+                updateCategoryDropdowns();
             }
         }
 
@@ -263,10 +300,10 @@
             if (!input) return;
             const newCat = input.value.trim();
             if (newCat) {
-                // Ensure proper capitalization for consistent display
                 const formattedCat = newCat.charAt(0).toUpperCase() + newCat.slice(1);
-                if (!defaultCategories.includes(formattedCat)) {
-                    defaultCategories.push(formattedCat);
+                if (!systemCategories.includes(formattedCat) && !userCreatedCategories.includes(formattedCat)) {
+                    userCreatedCategories.push(formattedCat);
+                    saveUserCategoriesToMemory();
                 }
                 updateCategoryDropdowns();
                 const select = document.getElementById('newItemCategory');
@@ -283,7 +320,7 @@
             const wrapper = document.getElementById('customCategoryInputWrapper');
             if (wrapper) wrapper.classList.add('hidden');
             const select = document.getElementById('newItemCategory');
-            if (select) select.value = defaultCategories[0];
+            if (select) select.value = systemCategories[0];
         }
 
         function renderTable() {
@@ -308,10 +345,22 @@
                 return matchesSearch && matchesUrgency;
             });
 
+            // Smart logical sorting engine implementation
             if (sortConfig.key) {
                 filtered.sort((a, b) => {
-                    let valA = getRowValue(a, sortConfig.key).toString().toLowerCase();
-                    let valB = getRowValue(b, sortConfig.key).toString().toLowerCase();
+                    let valA = getRowValue(a, sortConfig.key).toString().trim();
+                    let valB = getRowValue(b, sortConfig.key).toString().trim();
+                    
+                    // Fixed Priority Matrix Sorting logic
+                    if (sortConfig.key === 'Urgency') {
+                        let weightA = URGENCY_ORDER[valA.toLowerCase()] !== undefined ? URGENCY_ORDER[valA.toLowerCase()] : 99;
+                        let weightB = URGENCY_ORDER[valB.toLowerCase()] !== undefined ? URGENCY_ORDER[valB.toLowerCase()] : 99;
+                        return sortConfig.direction === 'asc' ? weightA - weightB : weightB - weightA;
+                    }
+                    
+                    // Fallback to traditional dictionary string formatting comparison
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
                     if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                     if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
                     return 0;
@@ -348,10 +397,10 @@
                         </span>
                     </td>
                     <td class="p-4 text-right space-x-3">
-                        <button onclick="startEdit(${globalIndex})" class="text-slate-400 hover:text-blue-600 transition-all active:scale-110 p-2 inline-flex">
+                        <button onclick="startEdit(${globalIndex})" class="text-slate-400 hover:text-blue-600 transition-all active:scale-110 p-2 inline-flex" title="Edit row">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
-                        <button onclick="deleteItem(${globalIndex})" class="text-slate-400 hover:text-red-600 transition-all active:scale-110 p-2 inline-flex">
+                        <button onclick="deleteItem(${globalIndex})" class="text-slate-400 hover:text-red-600 transition-all active:scale-110 p-2 inline-flex" title="Delete row">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </td>
@@ -384,7 +433,6 @@
             if (editRowIndex) editRowIndex.value = index;
             if (newItemName) newItemName.value = getRowValue(row, 'Item');
             
-            // Rebuild category list to ensure it reflects current categories
             updateCategoryDropdowns();
             
             const editCategory = getRowValue(row, 'Category');
@@ -464,7 +512,6 @@
                     Urgency: newItemUrgency ? newItemUrgency.value : ''
                 };
 
-                // Prevent submits if custom input is in active state and user didn't click 'Add'
                 if (payload.Category === '__NEW__') {
                     alert('Please type or complete adding your custom category first!');
                     return;
@@ -516,7 +563,6 @@
             if (doneCount) doneCount.innerText = completedIds.size;
         }
 
-        // Bulletproof execution trigger to prevent race conditions during load
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             fetchData();
         } else {
