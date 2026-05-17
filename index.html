@@ -155,6 +155,7 @@
     </div>
 
     <script>
+        // Make sure to double check that this matches your actual deployed web app URL from Google Sheet
         const API_URL = 'https://script.google.com/macros/s/AKfycbyh6vANg0C6aF3r7qXH7NSqU79kMkEtrqN0JFkry9EZrBznbUwEjmHqzJHTvUMn8I6Crg/exec';
         
         let shoppingItems = [];
@@ -170,9 +171,9 @@
             const errorBanner = document.getElementById('error-banner');
             const errorMessage = document.getElementById('error-message');
             
-            spinner.classList.remove('hidden');
-            statusText.textContent = 'Syncing...';
-            errorBanner.classList.add('hidden');
+            if (spinner) spinner.classList.remove('hidden');
+            if (statusText) statusText.textContent = 'Syncing...';
+            if (errorBanner) errorBanner.classList.add('hidden');
 
             try {
                 const response = await fetch(API_URL);
@@ -180,28 +181,34 @@
                 const result = await response.json();
                 
                 if (result.status === "success") {
-                    shoppingItems = result.data;
+                    shoppingItems = result.data || [];
                     updateCategoryDropdowns();
                     renderTable();
-                    statusText.textContent = 'Synced';
+                    if (statusText) statusText.textContent = 'Synced';
                 } else {
                     throw new Error(result.message || "Unknown API Error");
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-                statusText.textContent = 'Sync Error';
-                errorBanner.classList.remove('hidden');
-                errorMessage.textContent = error.message;
+                if (statusText) statusText.textContent = 'Sync Error';
+                if (errorBanner) {
+                    errorBanner.classList.remove('hidden');
+                    errorMessage.textContent = error.message;
+                }
             } finally {
-                spinner.classList.add('hidden');
+                if (spinner) spinner.classList.add('hidden');
             }
         }
 
         function getRowValue(row, key) {
+            if (!row) return '';
             return row[key] || row[key.toLowerCase()] || row[key.charAt(0).toUpperCase() + key.slice(1)] || '';
         }
 
         function updateCategoryDropdowns() {
+            const select = document.getElementById('newItemCategory');
+            if (!select) return;
+
             const sheetCategories = new Set();
             shoppingItems.forEach(item => {
                 const cat = getRowValue(item, 'Category');
@@ -212,8 +219,6 @@
 
             // Combine starting/predefined, custom ones registered dynamically, and sheet categories
             const allCategories = new Set([...defaultCategories, ...sheetCategories]);
-            
-            const select = document.getElementById('newItemCategory');
             const currentVal = select.value;
             
             select.innerHTML = '';
@@ -243,9 +248,11 @@
 
         function checkCustomCategory(val) {
             const wrapper = document.getElementById('customCategoryInputWrapper');
+            if (!wrapper) return;
             if (val === '__NEW__') {
                 wrapper.classList.remove('hidden');
-                document.getElementById('customCategoryName').focus();
+                const customInput = document.getElementById('customCategoryName');
+                if (customInput) customInput.focus();
             } else {
                 wrapper.classList.add('hidden');
             }
@@ -253,6 +260,7 @@
 
         function saveCustomCategory() {
             const input = document.getElementById('customCategoryName');
+            if (!input) return;
             const newCat = input.value.trim();
             if (newCat) {
                 // Ensure proper capitalization for consistent display
@@ -261,22 +269,31 @@
                     defaultCategories.push(formattedCat);
                 }
                 updateCategoryDropdowns();
-                document.getElementById('newItemCategory').value = formattedCat;
+                const select = document.getElementById('newItemCategory');
+                if (select) select.value = formattedCat;
                 input.value = '';
-                document.getElementById('customCategoryInputWrapper').classList.add('hidden');
+                const wrapper = document.getElementById('customCategoryInputWrapper');
+                if (wrapper) wrapper.classList.add('hidden');
             }
         }
 
         function cancelCustomCategory() {
-            document.getElementById('customCategoryName').value = '';
-            document.getElementById('customCategoryInputWrapper').classList.add('hidden');
-            document.getElementById('newItemCategory').value = defaultCategories[0];
+            const input = document.getElementById('customCategoryName');
+            if (input) input.value = '';
+            const wrapper = document.getElementById('customCategoryInputWrapper');
+            if (wrapper) wrapper.classList.add('hidden');
+            const select = document.getElementById('newItemCategory');
+            if (select) select.value = defaultCategories[0];
         }
 
         function renderTable() {
             const body = document.getElementById('tableBody');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const urgencyFilter = document.getElementById('filterUrgency').value;
+            if (!body) return;
+
+            const searchInput = document.getElementById('searchInput');
+            const filterUrgency = document.getElementById('filterUrgency');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const urgencyFilter = filterUrgency ? filterUrgency.value : 'all';
             
             body.innerHTML = '';
             
@@ -356,27 +373,40 @@
 
         function startEdit(index) {
             const row = shoppingItems[index];
-            document.getElementById('editRowIndex').value = index;
-            document.getElementById('newItemName').value = getRowValue(row, 'Item');
+            const editRowIndex = document.getElementById('editRowIndex');
+            const newItemName = document.getElementById('newItemName');
+            const newItemCategory = document.getElementById('newItemCategory');
+            const newItemUrgency = document.getElementById('newItemUrgency');
+            const formTitle = document.getElementById('form-title');
+            const btnText = document.getElementById('btn-text');
+            const cancelEditBtn = document.getElementById('cancel-edit');
+
+            if (editRowIndex) editRowIndex.value = index;
+            if (newItemName) newItemName.value = getRowValue(row, 'Item');
             
             // Rebuild category list to ensure it reflects current categories
             updateCategoryDropdowns();
             
             const editCategory = getRowValue(row, 'Category');
-            document.getElementById('newItemCategory').value = editCategory;
-            document.getElementById('newItemUrgency').value = getRowValue(row, 'Urgency');
+            if (newItemCategory) newItemCategory.value = editCategory;
+            if (newItemUrgency) newItemUrgency.value = getRowValue(row, 'Urgency');
             
-            document.getElementById('form-title').innerText = "Edit Item";
-            document.getElementById('btn-text').innerText = "Update Row";
-            document.getElementById('cancel-edit').classList.remove('hidden');
-            document.getElementById('newItemName').focus();
+            if (formTitle) formTitle.innerText = "Edit Item";
+            if (btnText) btnText.innerText = "Update Row";
+            if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
+            if (newItemName) newItemName.focus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function resetForm() {
-            document.getElementById('addItemForm').reset();
-            document.getElementById('editRowIndex').value = "";
-            document.getElementById('form-title').innerText = "Add New Item";
+            const form = document.getElementById('addItemForm');
+            if (form) form.reset();
+
+            const editRowIndex = document.getElementById('editRowIndex');
+            if (editRowIndex) editRowIndex.value = "";
+
+            const formTitle = document.getElementById('form-title');
+            if (formTitle) formTitle.innerText = "Add New Item";
             
             const btnText = document.getElementById('btn-text');
             if (btnText) btnText.innerText = "Add to Sheet";
@@ -384,15 +414,18 @@
             const spinner = document.getElementById('btn-spinner');
             if (spinner) spinner.classList.add('hidden');
             
-            document.getElementById('cancel-edit').classList.add('hidden');
-            document.getElementById('customCategoryInputWrapper').classList.add('hidden');
+            const cancelEditBtn = document.getElementById('cancel-edit');
+            if (cancelEditBtn) cancelEditBtn.classList.add('hidden');
+
+            const wrapper = document.getElementById('customCategoryInputWrapper');
+            if (wrapper) wrapper.classList.add('hidden');
         }
 
         async function deleteItem(index) {
             if (!confirm('Are you sure you want to delete this item?')) return;
             
             const statusText = document.getElementById('status-text');
-            statusText.textContent = 'Deleting...';
+            if (statusText) statusText.textContent = 'Deleting...';
             
             try {
                 await fetch(API_URL, {
@@ -409,6 +442,86 @@
             }
         }
 
-        document.getElementById('addItemForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById
+        const addItemForm = document.getElementById('addItemForm');
+        if (addItemForm) {
+            addItemForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const spinner = document.getElementById('btn-spinner');
+                const btnText = document.getElementById('btn-text');
+                const editRowIndex = document.getElementById('editRowIndex');
+                const newItemName = document.getElementById('newItemName');
+                const newItemCategory = document.getElementById('newItemCategory');
+                const newItemUrgency = document.getElementById('newItemUrgency');
+
+                const editIndex = editRowIndex ? editRowIndex.value : '';
+                
+                const payload = {
+                    action: editIndex !== "" ? 'update' : 'add',
+                    rowIndex: editIndex !== "" ? parseInt(editIndex) : null,
+                    Item: newItemName ? newItemName.value : '',
+                    Category: newItemCategory ? newItemCategory.value : '',
+                    Urgency: newItemUrgency ? newItemUrgency.value : ''
+                };
+
+                // Prevent submits if custom input is in active state and user didn't click 'Add'
+                if (payload.Category === '__NEW__') {
+                    alert('Please type or complete adding your custom category first!');
+                    return;
+                }
+
+                if (btn) btn.disabled = true;
+                if (spinner) spinner.classList.remove('hidden');
+                if (btnText) btnText.innerText = "Syncing...";
+
+                try {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify(payload)
+                    });
+
+                    resetForm();
+                    setTimeout(fetchData, 2000);
+                } catch (error) {
+                    alert('Save failed: ' + error.message);
+                } finally {
+                    if (btn) btn.disabled = false;
+                    if (spinner) spinner.classList.add('hidden');
+                    if (btnText) {
+                        btnText.innerText = editIndex !== "" ? "Update Row" : "Add to Sheet";
+                    }
+                }
+            });
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.addEventListener('input', renderTable);
+
+        const filterUrgency = document.getElementById('filterUrgency');
+        if (filterUrgency) filterUrgency.addEventListener('change', renderTable);
+
+        window.toggleDone = (index) => {
+            completedIds.has(index) ? completedIds.delete(index) : completedIds.add(index);
+            renderTable();
+        };
+
+        function updateStats() {
+            const totalCount = document.getElementById('total-count');
+            const nowCount = document.getElementById('now-count');
+            const doneCount = document.getElementById('done-count');
+
+            if (totalCount) totalCount.innerText = shoppingItems.length;
+            if (nowCount) nowCount.innerText = shoppingItems.filter(i => getRowValue(i, 'Urgency').toLowerCase().trim() === 'now').length;
+            if (doneCount) doneCount.innerText = completedIds.size;
+        }
+
+        // Bulletproof execution trigger to prevent race conditions during load
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            fetchData();
+        } else {
+            window.addEventListener('DOMContentLoaded', fetchData);
+        }
+    </script>
+</body>
+</html>
