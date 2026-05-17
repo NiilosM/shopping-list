@@ -95,13 +95,16 @@
                 <div class="md:col-span-1">
                     <input type="text" id="newItemName" placeholder="What do you need?" required class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
-                <select id="newItemCategory" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
-                    <option value="Grocery">Grocery</option>
-                    <option value="Household">Household</option>
-                    <option value="Tech">Tech</option>
-                    <option value="Personal Care">Personal Care</option>
-                    <option value="Kitchen">Kitchen</option>
-                </select>
+                <div class="w-full">
+                    <select id="newItemCategory" onchange="checkCustomCategory(this.value)" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
+                        <!-- Dynamically populated from JS -->
+                    </select>
+                    <div id="customCategoryInputWrapper" class="hidden mt-2 flex gap-2">
+                        <input type="text" id="customCategoryName" placeholder="Custom Category Name" class="flex-grow px-3 py-2 border border-slate-200 rounded-lg outline-none text-sm bg-white">
+                        <button type="button" onclick="saveCustomCategory()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold transition-colors btn-touch">Add</button>
+                        <button type="button" onclick="cancelCustomCategory()" class="text-slate-400 px-2 py-2 hover:text-slate-600 transition-colors">✕</button>
+                    </div>
+                </div>
                 <select id="newItemUrgency" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
                     <option value="Now">Now</option>
                     <option value="Soon">Soon</option>
@@ -157,6 +160,9 @@
         let shoppingItems = [];
         let completedIds = new Set();
         let sortConfig = { key: null, direction: 'asc' };
+        
+        // Initial setup of system categories
+        let defaultCategories = ['Grocery', 'Household', 'Tech', 'Personal Care', 'Kitchen'];
 
         async function fetchData() {
             const statusText = document.getElementById('status-text');
@@ -175,6 +181,7 @@
                 
                 if (result.status === "success") {
                     shoppingItems = result.data;
+                    updateCategoryDropdowns();
                     renderTable();
                     statusText.textContent = 'Synced';
                 } else {
@@ -192,6 +199,78 @@
 
         function getRowValue(row, key) {
             return row[key] || row[key.toLowerCase()] || row[key.charAt(0).toUpperCase() + key.slice(1)] || '';
+        }
+
+        function updateCategoryDropdowns() {
+            const sheetCategories = new Set();
+            shoppingItems.forEach(item => {
+                const cat = getRowValue(item, 'Category');
+                if (cat && cat.trim() !== '') {
+                    sheetCategories.add(cat.trim());
+                }
+            });
+
+            // Combine starting/predefined, custom ones registered dynamically, and sheet categories
+            const allCategories = new Set([...defaultCategories, ...sheetCategories]);
+            
+            const select = document.getElementById('newItemCategory');
+            const currentVal = select.value;
+            
+            select.innerHTML = '';
+            allCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+            
+            // Add custom trigger option
+            const addOpt = document.createElement('option');
+            addOpt.value = "__NEW__";
+            addOpt.className = "text-blue-600 font-semibold";
+            addOpt.textContent = "+ Add Custom Category...";
+            select.appendChild(addOpt);
+            
+            // Restore selection if safe, otherwise default to first available option
+            if (allCategories.has(currentVal)) {
+                select.value = currentVal;
+            } else if (currentVal === "__NEW__") {
+                select.value = "__NEW__";
+            } else {
+                select.value = defaultCategories[0];
+            }
+        }
+
+        function checkCustomCategory(val) {
+            const wrapper = document.getElementById('customCategoryInputWrapper');
+            if (val === '__NEW__') {
+                wrapper.classList.remove('hidden');
+                document.getElementById('customCategoryName').focus();
+            } else {
+                wrapper.classList.add('hidden');
+            }
+        }
+
+        function saveCustomCategory() {
+            const input = document.getElementById('customCategoryName');
+            const newCat = input.value.trim();
+            if (newCat) {
+                // Ensure proper capitalization for consistent display
+                const formattedCat = newCat.charAt(0).toUpperCase() + newCat.slice(1);
+                if (!defaultCategories.includes(formattedCat)) {
+                    defaultCategories.push(formattedCat);
+                }
+                updateCategoryDropdowns();
+                document.getElementById('newItemCategory').value = formattedCat;
+                input.value = '';
+                document.getElementById('customCategoryInputWrapper').classList.add('hidden');
+            }
+        }
+
+        function cancelCustomCategory() {
+            document.getElementById('customCategoryName').value = '';
+            document.getElementById('customCategoryInputWrapper').classList.add('hidden');
+            document.getElementById('newItemCategory').value = defaultCategories[0];
         }
 
         function renderTable() {
@@ -279,7 +358,12 @@
             const row = shoppingItems[index];
             document.getElementById('editRowIndex').value = index;
             document.getElementById('newItemName').value = getRowValue(row, 'Item');
-            document.getElementById('newItemCategory').value = getRowValue(row, 'Category');
+            
+            // Rebuild category list to ensure it reflects current categories
+            updateCategoryDropdowns();
+            
+            const editCategory = getRowValue(row, 'Category');
+            document.getElementById('newItemCategory').value = editCategory;
             document.getElementById('newItemUrgency').value = getRowValue(row, 'Urgency');
             
             document.getElementById('form-title').innerText = "Edit Item";
@@ -301,6 +385,7 @@
             if (spinner) spinner.classList.add('hidden');
             
             document.getElementById('cancel-edit').classList.add('hidden');
+            document.getElementById('customCategoryInputWrapper').classList.add('hidden');
         }
 
         async function deleteItem(index) {
@@ -326,58 +411,4 @@
 
         document.getElementById('addItemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const spinner = document.getElementById('btn-spinner');
-            const btnText = document.getElementById('btn-text');
-            const editIndex = document.getElementById('editRowIndex').value;
-            
-            const payload = {
-                action: editIndex !== "" ? 'update' : 'add',
-                rowIndex: editIndex !== "" ? parseInt(editIndex) : null,
-                Item: document.getElementById('newItemName').value,
-                Category: document.getElementById('newItemCategory').value,
-                Urgency: document.getElementById('newItemUrgency').value
-            };
-
-            btn.disabled = true;
-            if (spinner) spinner.classList.remove('hidden');
-            if (btnText) btnText.innerText = "Syncing...";
-
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(payload)
-                });
-
-                resetForm();
-                setTimeout(fetchData, 2000);
-            } catch (error) {
-                alert('Save failed: ' + error.message);
-            } finally {
-                btn.disabled = false;
-                if (spinner) spinner.classList.add('hidden');
-                if (btnText) {
-                    btnText.innerText = document.getElementById('editRowIndex').value !== "" ? "Update Row" : "Add to Sheet";
-                }
-            }
-        });
-
-        document.getElementById('searchInput').addEventListener('input', renderTable);
-        document.getElementById('filterUrgency').addEventListener('change', renderTable);
-
-        window.toggleDone = (index) => {
-            completedIds.has(index) ? completedIds.delete(index) : completedIds.add(index);
-            renderTable();
-        };
-
-        function updateStats() {
-            document.getElementById('total-count').innerText = shoppingItems.length;
-            document.getElementById('now-count').innerText = shoppingItems.filter(i => getRowValue(i, 'Urgency').toLowerCase().trim() === 'now').length;
-            document.getElementById('done-count').innerText = completedIds.size;
-        }
-
-        window.onload = fetchData;
-    </script>
-</body>
-</html>
+            const btn = document.getElementById
