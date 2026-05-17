@@ -44,6 +44,7 @@
 <body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
+        <!-- Error Alert -->
         <div id="error-banner" class="hidden mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-r-xl shadow-sm">
             <p class="font-bold">Connection Issue</p>
             <p id="error-message" class="text-sm">Details will appear here...</p>
@@ -66,6 +67,7 @@
             </div>
         </header>
 
+        <!-- Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
             <div class="glass-card p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                 <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Total Items</p>
@@ -81,7 +83,9 @@
             </div>
         </div>
 
+        <!-- Add/Edit Form & Category Manager Panel -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Left Side Form (Takes 2 Cols) -->
             <div class="glass-card p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
                 <div class="flex justify-between items-center mb-4">
                     <h2 id="form-title" class="text-lg font-semibold text-slate-800">Add New Item</h2>
@@ -94,7 +98,8 @@
                     </div>
                     <div class="w-full">
                         <select id="newItemCategory" onchange="checkCustomCategory(this.value)" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
-                            </select>
+                            <!-- Injected dynamically -->
+                        </select>
                         <div id="customCategoryInputWrapper" class="hidden mt-2 flex gap-2">
                             <input type="text" id="customCategoryName" placeholder="Category Name" class="flex-grow px-3 py-2 border border-slate-200 rounded-lg outline-none text-sm bg-white">
                             <button type="button" onclick="saveCustomCategory()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold transition-colors btn-touch">Add</button>
@@ -113,14 +118,17 @@
                 </form>
             </div>
 
+            <!-- Right Side Category Deletion / List Panel (Takes 1 Col) -->
             <div class="glass-card p-5 rounded-2xl shadow-sm border border-slate-200 bg-slate-50/50">
                 <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Custom Categories</h3>
                 <div id="customCategoriesList" class="space-y-2 max-h-[120px] overflow-y-auto pr-1 text-sm">
+                    <!-- Custom categories generated with delete triggers here -->
                     <p class="text-slate-400 italic text-xs">No user categories added yet.</p>
                 </div>
             </div>
         </div>
 
+        <!-- Search and Filters -->
         <div class="flex flex-col sm:flex-row gap-4 mb-4">
             <div class="relative flex-grow">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -136,6 +144,7 @@
             </select>
         </div>
 
+        <!-- Table -->
         <div class="glass-card rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[600px]">
@@ -149,7 +158,8 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100 bg-white">
-                        </tbody>
+                        <!-- Data injected here -->
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -159,7 +169,6 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbyh6vANg0C6aF3r7qXH7NSqU79kMkEtrqN0JFkry9EZrBznbUwEjmHqzJHTvUMn8I6Crg/exec';
         
         let shoppingItems = [];
-        let completedIds = new Set();
         let sortConfig = { key: null, direction: 'asc' };
         
         // System baseline categories
@@ -167,7 +176,7 @@
         // Separated array specifically tracking additions created by the user
         let userCreatedCategories = JSON.parse(localStorage.getItem('user_categories')) || [];
 
-        // Priority weighting dictionary mapping for logical relational mathematical comparisons
+        // Priority weighting dictionary mapping for logical relational comparisons
         const URGENCY_ORDER = { 'now': 0, 'soon': 1, 'later': 2 };
 
         async function fetchData() {
@@ -218,6 +227,12 @@
         function getRowValue(row, key) {
             if (!row) return '';
             return row[key] || row[key.toLowerCase()] || row[key.charAt(0).toUpperCase() + key.slice(1)] || '';
+        }
+
+        // Helper to evaluate Done checkbox state robustly
+        function isItemDone(row) {
+            const val = getRowValue(row, 'Done');
+            return val === true || val === 'true' || val === 'TRUE';
         }
 
         function saveUserCategoriesToMemory() {
@@ -348,6 +363,13 @@
             // Smart logical sorting engine implementation
             if (sortConfig.key) {
                 filtered.sort((a, b) => {
+                    // Sorting specifically by checked Done status
+                    if (sortConfig.key === 'done') {
+                        let doneA = isItemDone(a) ? 1 : 0;
+                        let doneB = isItemDone(b) ? 1 : 0;
+                        return sortConfig.direction === 'asc' ? doneA - doneB : doneB - doneA;
+                    }
+
                     let valA = getRowValue(a, sortConfig.key).toString().trim();
                     let valB = getRowValue(b, sortConfig.key).toString().trim();
                     
@@ -358,7 +380,7 @@
                         return sortConfig.direction === 'asc' ? weightA - weightB : weightB - weightA;
                     }
                     
-                    // Fallback to traditional dictionary string formatting comparison
+                    // Fallback to traditional string comparison
                     valA = valA.toLowerCase();
                     valB = valB.toLowerCase();
                     if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -377,7 +399,7 @@
                 const itemName = getRowValue(row, 'Item');
                 const category = getRowValue(row, 'Category');
                 const urgency = getRowValue(row, 'Urgency').trim() || 'Later';
-                const isDone = completedIds.has(globalIndex);
+                const isDone = isItemDone(row);
                 
                 if (isDone) tr.classList.add('is-done');
                 
@@ -469,6 +491,49 @@
             if (wrapper) wrapper.classList.add('hidden');
         }
 
+        // Toggles local state optimistically, then sends update call to Sheet
+        window.toggleDone = async (index) => {
+            const item = shoppingItems[index];
+            if (!item) return;
+
+            const currentDone = isItemDone(item);
+            const newDone = !currentDone;
+
+            // Handle any capitalization variations optimistically
+            if (item.Done !== undefined) item.Done = newDone;
+            else if (item.done !== undefined) item.done = newDone;
+            else if (item.DONE !== undefined) item.DONE = newDone;
+            else item.Done = newDone;
+
+            renderTable();
+
+            const statusText = document.getElementById('status-text');
+            if (statusText) statusText.textContent = 'Syncing...';
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'update',
+                        rowIndex: index,
+                        Item: getRowValue(item, 'Item'),
+                        Category: getRowValue(item, 'Category'),
+                        Urgency: getRowValue(item, 'Urgency'),
+                        Done: newDone
+                    })
+                });
+                setTimeout(fetchData, 1500);
+            } catch (error) {
+                console.error("Failed to sync Done status to sheet:", error);
+                // Revert optimistic state back on failed connection
+                if (item.Done !== undefined) item.Done = currentDone;
+                else if (item.done !== undefined) item.done = currentDone;
+                else if (item.DONE !== undefined) item.DONE = currentDone;
+                renderTable();
+            }
+        };
+
         async function deleteItem(index) {
             if (!confirm('Are you sure you want to delete this item?')) return;
             
@@ -509,7 +574,8 @@
                     rowIndex: editIndex !== "" ? parseInt(editIndex) : null,
                     Item: newItemName ? newItemName.value : '',
                     Category: newItemCategory ? newItemCategory.value : '',
-                    Urgency: newItemUrgency ? newItemUrgency.value : ''
+                    Urgency: newItemUrgency ? newItemUrgency.value : '',
+                    Done: editIndex !== "" ? isItemDone(shoppingItems[parseInt(editIndex)]) : false
                 };
 
                 if (payload.Category === '__NEW__') {
@@ -548,11 +614,6 @@
         const filterUrgency = document.getElementById('filterUrgency');
         if (filterUrgency) filterUrgency.addEventListener('change', renderTable);
 
-        window.toggleDone = (index) => {
-            completedIds.has(index) ? completedIds.delete(index) : completedIds.add(index);
-            renderTable();
-        };
-
         function updateStats() {
             const totalCount = document.getElementById('total-count');
             const nowCount = document.getElementById('now-count');
@@ -560,7 +621,7 @@
 
             if (totalCount) totalCount.innerText = shoppingItems.length;
             if (nowCount) nowCount.innerText = shoppingItems.filter(i => getRowValue(i, 'Urgency').toLowerCase().trim() === 'now').length;
-            if (doneCount) doneCount.innerText = completedIds.size;
+            if (doneCount) doneCount.innerText = shoppingItems.filter(i => isItemDone(i)).length;
         }
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
