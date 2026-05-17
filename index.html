@@ -166,6 +166,7 @@
     </div>
 
     <script>
+        // Make sure this matches your deployed Web App URL from Google Sheets
         const API_URL = 'https://script.google.com/macros/s/AKfycbyh6vANg0C6aF3r7qXH7NSqU79kMkEtrqN0JFkry9EZrBznbUwEjmHqzJHTvUMn8I6Crg/exec';
         
         let shoppingItems = [];
@@ -499,7 +500,7 @@
             const currentDone = isItemDone(item);
             const newDone = !currentDone;
 
-            // Handle any capitalization variations optimistically
+            // Handle capitalization variations in local state memory optimistically
             if (item.Done !== undefined) item.Done = newDone;
             else if (item.done !== undefined) item.done = newDone;
             else if (item.DONE !== undefined) item.DONE = newDone;
@@ -523,10 +524,11 @@
                         Done: newDone
                     })
                 });
+                // Settle background local sync after brief write-buffer delay
                 setTimeout(fetchData, 1500);
             } catch (error) {
                 console.error("Failed to sync Done status to sheet:", error);
-                // Revert optimistic state back on failed connection
+                // Revert optimistic state back on connection failure
                 if (item.Done !== undefined) item.Done = currentDone;
                 else if (item.done !== undefined) item.done = currentDone;
                 else if (item.DONE !== undefined) item.DONE = currentDone;
