@@ -108,6 +108,7 @@
                     <option value="Later">Later</option>
                 </select>
                 <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
+                    <div id="btn-spinner" class="loader hidden"></div>
                     <span id="btn-text">Add to Sheet</span>
                 </button>
             </form>
@@ -292,7 +293,13 @@
             document.getElementById('addItemForm').reset();
             document.getElementById('editRowIndex').value = "";
             document.getElementById('form-title').innerText = "Add New Item";
-            document.getElementById('btn-text').innerText = "Add to Sheet";
+            
+            const btnText = document.getElementById('btn-text');
+            if (btnText) btnText.innerText = "Add to Sheet";
+            
+            const spinner = document.getElementById('btn-spinner');
+            if (spinner) spinner.classList.add('hidden');
+            
             document.getElementById('cancel-edit').classList.add('hidden');
         }
 
@@ -320,6 +327,8 @@
         document.getElementById('addItemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('btn-spinner');
+            const btnText = document.getElementById('btn-text');
             const editIndex = document.getElementById('editRowIndex').value;
             
             const payload = {
@@ -331,7 +340,8 @@
             };
 
             btn.disabled = true;
-            btn.innerHTML = `<div class="loader"></div> <span>Syncing...</span>`;
+            if (spinner) spinner.classList.remove('hidden');
+            if (btnText) btnText.innerText = "Syncing...";
 
             try {
                 await fetch(API_URL, {
@@ -346,7 +356,10 @@
                 alert('Save failed: ' + error.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = 'Add to Sheet';
+                if (spinner) spinner.classList.add('hidden');
+                if (btnText) {
+                    btnText.innerText = document.getElementById('editRowIndex').value !== "" ? "Update Row" : "Add to Sheet";
+                }
             }
         });
 
