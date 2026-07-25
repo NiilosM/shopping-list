@@ -3,182 +3,372 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shopping Inventory Manager</title>
+    <title>Shopping Inventory — Editorial Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; 
-            padding-bottom: 5rem;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background-color: #f6f6f6; 
+            color: #111111;
+            padding-bottom: 6rem;
             -webkit-tap-highlight-color: transparent;
         }
-        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
-        .status-now { background-color: #fee2e2; color: #991b1b; }
-        .status-soon, .status-sooner { background-color: #fef3c7; color: #92400e; }
-        .status-later { background-color: #e0f2fe; color: #075985; }
-        tr:hover { background-color: #f1f5f9; transition: background 0.2s; }
-        .is-done { opacity: 0.5; text-decoration: line-through; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .editorial-border { border: 1px solid #111111; }
+        .editorial-border-light { border: 1px solid #e5e5e5; }
+        
+        .status-now { background-color: #111111; color: #ffffff; }
+        .status-soon { background-color: #e5e5e5; color: #111111; }
+        .status-later { background-color: #ffffff; color: #737373; border: 1px solid #d4d4d4; }
+        
+        tr:hover { background-color: #f0f0f0; transition: background 0.15s ease; }
+        .is-done { opacity: 0.35; text-decoration: line-through; }
         
         .loader {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3b82f6;
+            border: 2px solid #e5e5e5;
+            border-top: 2px solid #111111;
             border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
+            width: 14px;
+            height: 14px;
+            animation: spin 0.8s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* Custom Monochromatic Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #f6f6f6; }
+        ::-webkit-scrollbar-thumb { background: #111111; }
 
         @media (max-width: 640px) {
-            .btn-touch { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
-            input, select, button { font-size: 16px !important; }
+            .btn-touch { min-height: 44px; min-width: 44px; }
+            input, select, button { font-size: 14px !important; }
+        }
+
+        /* Slide-over panel animation */
+        .drawer-slide {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-3 sm:p-6 md:p-10 text-neutral-900">
 
-    <div class="max-w-6xl mx-auto">
-        <!-- Error Alert -->
-        <div id="error-banner" class="hidden mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-r-xl shadow-sm">
-            <p class="font-bold">Connection Issue</p>
-            <p id="error-message" class="text-sm">Details will appear here...</p>
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Error Banner -->
+        <div id="error-banner" class="hidden p-4 bg-black text-white border border-black flex justify-between items-center text-xs font-mono">
+            <div>
+                <span class="font-bold uppercase tracking-widest">[Connection Alert]</span>
+                <span id="error-message" class="ml-2 text-neutral-300">...</span>
+            </div>
+            <button onclick="document.getElementById('error-banner').classList.add('hidden')" class="underline hover:text-neutral-400">DISMISS</button>
         </div>
 
-        <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <!-- Top Nav / Title Header -->
+        <header class="flex flex-col md:flex-row md:items-end justify-between border-b-2 border-black pb-5 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Shopping Inventory</h1>
-                <p class="text-slate-500">Cloud Synced Dashboard</p>
-            </div>
-            <div class="flex gap-2">
-                <div id="sync-status" class="flex items-center gap-2 text-sm font-medium text-slate-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
-                    <div id="loading-spinner" class="loader"></div>
-                    <span id="status-text">Connecting...</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest text-neutral-600">INVENTORY SYSTEM</span>
                 </div>
-                <button onclick="fetchData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium shadow-sm transition-all text-sm flex items-center gap-2 btn-touch">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
-                    <span class="hidden sm:inline">Refresh</span>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase mt-1 text-black">Shopping Inventory</h1>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Sticky Note Toggle -->
+                <button onclick="toggleGroceryNote()" class="bg-white hover:bg-black hover:text-white border border-black px-4 py-2 font-mono text-xs uppercase font-semibold tracking-wider transition-all flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <span>Grocery Note</span>
+                </button>
+
+                <!-- Sync / Refresh Button -->
+                <button onclick="fetchData()" class="bg-black text-white hover:bg-neutral-800 border border-black px-4 py-2 font-mono text-xs uppercase font-semibold tracking-wider transition-all flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
+                    <div id="loading-spinner" class="loader hidden border-white border-t-transparent"></div>
+                    <span id="status-text">SYNC</span>
                 </button>
             </div>
         </header>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
-            <div class="glass-card p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200">
-                <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Total Items</p>
-                <h3 id="total-count" class="text-3xl font-bold text-slate-800">0</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-white p-4 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <p class="text-xs font-mono font-bold uppercase tracking-wider text-neutral-600">TOTAL INDEXED</p>
+                <h3 id="total-count" class="text-3xl font-extrabold font-mono mt-1 text-black">0</h3>
             </div>
-            <div class="glass-card p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-red-400">
-                <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Urgent (Now)</p>
-                <h3 id="now-count" class="text-3xl font-bold text-red-600">0</h3>
+            <div class="bg-white p-4 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <p class="text-xs font-mono font-bold uppercase tracking-wider text-neutral-600">PRIORITY (NOW)</p>
+                <h3 id="now-count" class="text-3xl font-extrabold font-mono mt-1 text-black">0</h3>
             </div>
-            <div class="glass-card p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-400">
-                <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Marked Done</p>
-                <h3 id="done-count" class="text-3xl font-bold text-emerald-600">0</h3>
+            <div class="bg-white p-4 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <p class="text-xs font-mono font-bold uppercase tracking-wider text-neutral-600">COMPLETED</p>
+                <h3 id="done-count" class="text-3xl font-extrabold font-mono mt-1 text-neutral-500">0</h3>
             </div>
         </div>
 
-        <!-- Add/Edit Form & Category Manager Panel -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Left Side Form (Takes 2 Cols) -->
-            <div class="glass-card p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="form-title" class="text-lg font-semibold text-slate-800">Add New Item</h2>
-                    <button id="cancel-edit" class="hidden text-sm text-red-500 font-medium hover:underline px-2 py-1" onclick="resetForm()">Cancel Edit</button>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <!-- Form Section (3 cols) -->
+            <div class="bg-white p-5 border border-black lg:col-span-3">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-neutral-200">
+                    <h2 id="form-title" class="text-xs font-mono uppercase font-bold tracking-widest text-neutral-800">[01] Add New Entry</h2>
+                    <button type="button" id="cancel-edit" onclick="resetForm()" class="hidden text-xs font-mono text-neutral-500 underline hover:text-black uppercase">Cancel Edit</button>
                 </div>
-                <form id="addItemForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                <form id="addItemForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                     <input type="hidden" id="editRowIndex" value="">
-                    <div class="md:col-span-1">
-                        <input type="text" id="newItemName" placeholder="What do you need?" required class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+
+                    <!-- Item Name -->
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-mono uppercase tracking-wider font-bold text-neutral-700 mb-1">Item Name *</label>
+                        <input type="text" id="newItemName" placeholder="e.g. Olive Oil, Espresso Beans" required class="w-full px-3 py-2 border border-black focus:bg-neutral-50 outline-none text-xs font-semibold">
                     </div>
-                    <div class="w-full">
-                        <select id="newItemCategory" onchange="checkCustomCategory(this.value)" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
-                            <!-- Injected dynamically -->
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider font-bold text-neutral-700 mb-1">Category</label>
+                        <select id="newItemCategory" onchange="checkCustomCategory(this.value)" class="w-full px-3 py-2 border border-black bg-white outline-none text-xs font-semibold">
+                            <!-- Populated dynamically -->
                         </select>
-                        <div id="customCategoryInputWrapper" class="hidden mt-2 flex gap-2">
-                            <input type="text" id="customCategoryName" placeholder="Category Name" class="flex-grow px-3 py-2 border border-slate-200 rounded-lg outline-none text-sm bg-white">
-                            <button type="button" onclick="saveCustomCategory()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold transition-colors btn-touch">Add</button>
-                            <button type="button" onclick="cancelCustomCategory()" class="text-slate-400 px-2 py-2 hover:text-slate-600 transition-colors">✕</button>
+                        <div id="customCategoryInputWrapper" class="hidden mt-2 flex gap-1">
+                            <input type="text" id="customCategoryName" placeholder="New category..." class="flex-grow px-2 py-1 border border-black text-xs font-mono">
+                            <button type="button" onclick="saveCustomCategory()" class="bg-black text-white px-2 py-1 text-xs font-mono uppercase font-bold">Add</button>
                         </div>
                     </div>
-                    <select id="newItemUrgency" class="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none bg-white transition-all">
-                        <option value="Now">Now</option>
-                        <option value="Soon">Soon</option>
-                        <option value="Later">Later</option>
-                    </select>
-                    <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
-                        <div id="btn-spinner" class="loader hidden"></div>
-                        <span id="btn-text">Add to Sheet</span>
-                    </button>
+
+                    <!-- Priority -->
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider font-bold text-neutral-700 mb-1">Priority</label>
+                        <select id="newItemUrgency" class="w-full px-3 py-2 border border-black bg-white outline-none text-xs font-semibold">
+                            <option value="Now">Now</option>
+                            <option value="Soon">Soon</option>
+                            <option value="Later">Later</option>
+                        </select>
+                    </div>
+
+                    <!-- Price Dropdown -->
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider font-bold text-neutral-700 mb-1">Price Tier</label>
+                        <select id="newItemPrice" class="w-full px-3 py-2 border border-black bg-white outline-none text-xs font-mono font-bold">
+                            <option value="$">$ (Budget)</option>
+                            <option value="$$" selected>$$ (Moderate)</option>
+                            <option value="$$$">$$$ (Premium)</option>
+                            <option value="$$$$">$$$$ (Luxury)</option>
+                            <option value="$$$$$">$$$$$ (Investment)</option>
+                        </select>
+                    </div>
+
+                    <!-- Weblink -->
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider font-bold text-neutral-700 mb-1">Web Link (URL)</label>
+                        <input type="url" id="newItemLink" placeholder="https://..." class="w-full px-3 py-2 border border-black focus:bg-neutral-50 outline-none text-xs font-mono">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="sm:col-span-2 lg:col-span-6 flex justify-end pt-2">
+                        <button type="submit" id="submitBtn" class="w-full sm:w-auto bg-black hover:bg-neutral-800 text-white font-mono text-xs font-bold uppercase tracking-widest px-8 py-3 border border-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] flex items-center justify-center gap-2">
+                            <div id="btn-spinner" class="loader hidden border-white border-t-transparent"></div>
+                            <span id="btn-text">SAVE ENTRY TO SHEET</span>
+                        </button>
+                    </div>
                 </form>
             </div>
 
-            <!-- Right Side Category Deletion / List Panel (Takes 1 Col) -->
-            <div class="glass-card p-5 rounded-2xl shadow-sm border border-slate-200 bg-slate-50/50">
-                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Custom Categories</h3>
-                <div id="customCategoriesList" class="space-y-2 max-h-[120px] overflow-y-auto pr-1 text-sm">
-                    <!-- Custom categories generated with delete triggers here -->
-                    <p class="text-slate-400 italic text-xs">No user categories added yet.</p>
+            <!-- Custom Category Side Panel (1 col) -->
+            <div class="bg-white p-5 border border-black">
+                <h3 class="text-xs font-mono uppercase font-bold tracking-widest mb-3 border-b border-neutral-200 pb-2 text-neutral-800">[02] Custom Categories</h3>
+                <div id="customCategoriesList" class="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 text-xs font-mono">
+                    <p class="text-neutral-400 italic">No custom categories added.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Search and Filters -->
-        <div class="flex flex-col sm:flex-row gap-4 mb-4">
-            <div class="relative flex-grow">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div class="bg-white p-4 border border-black space-y-3">
+            <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3">
+                
+                <!-- View Switcher -->
+                <div class="flex border border-black p-0.5 bg-neutral-100 self-start">
+                    <button onclick="switchView('table')" id="view-tab-table" class="px-3 py-1.5 text-xs font-mono uppercase tracking-wider font-semibold transition-all bg-black text-white">Table</button>
+                    <button onclick="switchView('compact')" id="view-tab-compact" class="px-3 py-1.5 text-xs font-mono uppercase tracking-wider font-semibold transition-all text-neutral-600 hover:text-black">Compact</button>
+                    <button onclick="switchView('kanban')" id="view-tab-kanban" class="px-3 py-1.5 text-xs font-mono uppercase tracking-wider font-semibold transition-all text-neutral-600 hover:text-black">Kanban</button>
+                    <button onclick="switchView('grid')" id="view-tab-grid" class="px-3 py-1.5 text-xs font-mono uppercase tracking-wider font-semibold transition-all text-neutral-600 hover:text-black">Grid</button>
                 </div>
-                <input type="text" id="searchInput" placeholder="Search items or categories..." class="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm shadow-sm transition-all">
+
+                <!-- Search Input -->
+                <div class="relative flex-grow max-w-md">
+                    <input type="text" id="searchInput" placeholder="SEARCH ENTRIES, CATEGORIES, OR LINKS..." class="w-full pl-3 pr-8 py-2 border border-black text-xs font-mono font-semibold outline-none focus:bg-neutral-50 uppercase placeholder-neutral-400">
+                    <span class="absolute right-2.5 top-2.5 text-neutral-400 text-xs font-mono">🔍</span>
+                </div>
             </div>
-            <select id="filterUrgency" class="px-4 py-3 border border-slate-200 rounded-xl outline-none bg-white text-sm shadow-sm font-medium">
-                <option value="all">All Priorities</option>
-                <option value="now">Now</option>
-                <option value="soon">Soon</option>
-                <option value="later">Later</option>
-            </select>
+
+            <!-- Filters Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-neutral-200">
+                <div>
+                    <select id="filterUrgency" class="w-full px-2 py-1.5 border border-neutral-300 text-xs font-mono font-semibold uppercase bg-white outline-none">
+                        <option value="all">ALL PRIORITIES</option>
+                        <option value="now">NOW</option>
+                        <option value="soon">SOON</option>
+                        <option value="later">LATER</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filterCategory" class="w-full px-2 py-1.5 border border-neutral-300 text-xs font-mono font-semibold uppercase bg-white outline-none">
+                        <option value="all">ALL CATEGORIES</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filterPrice" class="w-full px-2 py-1.5 border border-neutral-300 text-xs font-mono font-semibold bg-white outline-none">
+                        <option value="all">ALL PRICES</option>
+                        <option value="$">$</option>
+                        <option value="$$">$$</option>
+                        <option value="$$$">$$$</option>
+                        <option value="$$$$">$$$$</option>
+                        <option value="$$$$$">$$$$$</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="filterSort" class="w-full px-2 py-1.5 border border-neutral-300 text-xs font-mono font-semibold uppercase bg-white outline-none">
+                        <option value="default">SORT: DEFAULT</option>
+                        <option value="date-desc">SORT: NEWEST FIRST</option>
+                        <option value="date-asc">SORT: OLDEST FIRST</option>
+                        <option value="priority">SORT: PRIORITY</option>
+                        <option value="price">SORT: PRICE TIER</option>
+                        <option value="name">SORT: NAME A-Z</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
-        <!-- Table -->
-        <div class="glass-card rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200">
-                            <th class="p-4 font-semibold text-slate-700 text-xs uppercase tracking-wider w-16 text-center cursor-pointer" onclick="sortTable('done')">Done</th>
-                            <th class="p-4 font-semibold text-slate-700 text-xs uppercase tracking-wider cursor-pointer" onclick="sortTable('Item')">Item ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 text-xs uppercase tracking-wider cursor-pointer" onclick="sortTable('Category')">Category ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 text-xs uppercase tracking-wider cursor-pointer" onclick="sortTable('Urgency')">Priority ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 text-xs uppercase tracking-wider text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-100 bg-white">
-                        <!-- Data injected here -->
-                    </tbody>
-                </table>
+        <div id="bulkActionBar" class="hidden sticky top-4 z-20 bg-black text-white p-3 border-2 border-black flex flex-wrap items-center justify-between gap-3 shadow-lg font-mono text-xs">
+            <div class="flex items-center gap-2">
+                <span class="bg-white text-black font-bold px-2 py-0.5 text-[11px]" id="selectedCount">0</span>
+                <span class="uppercase tracking-widest text-[11px]">ITEMS SELECTED</span>
             </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="bulkMarkDone(true)" class="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1 uppercase text-[11px] border border-neutral-600">Mark Done</button>
+                <button onclick="bulkMarkDone(false)" class="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1 uppercase text-[11px] border border-neutral-600">Mark Undone</button>
+                
+                <select id="bulkCategorySelect" onchange="bulkChangeCategory(this.value)" class="bg-neutral-900 text-white px-2 py-1 border border-neutral-700 text-[11px] uppercase outline-none">
+                    <option value="">CHANGE CATEGORY...</option>
+                </select>
+
+                <select onchange="bulkChangePrice(this.value)" class="bg-neutral-900 text-white px-2 py-1 border border-neutral-700 text-[11px] uppercase outline-none">
+                    <option value="">CHANGE PRICE...</option>
+                    <option value="$">$</option>
+                    <option value="$$">$$</option>
+                    <option value="$$$">$$$</option>
+                    <option value="$$$$">$$$$</option>
+                    <option value="$$$$$">$$$$$</option>
+                </select>
+
+                <button onclick="bulkDelete()" class="bg-red-700 hover:bg-red-800 text-white px-3 py-1 uppercase text-[11px] font-bold">Delete Selected</button>
+                <button onclick="clearSelections()" class="text-neutral-400 hover:text-white px-2 py-1 underline text-[11px]">Clear</button>
+            </div>
+        </div>
+
+        <main>
+            <!-- 1. STANDARD TABLE VIEW -->
+            <div id="viewContainerTable" class="bg-white border border-black overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-black text-white text-[10px] font-mono uppercase tracking-widest border-b border-black">
+                                <th class="p-3 w-10 text-center">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" class="w-4 h-4 cursor-pointer accent-black">
+                                </th>
+                                <th class="p-3 w-12 text-center cursor-pointer hover:bg-neutral-800" onclick="sortTable('done')">DONE</th>
+                                <th class="p-3 cursor-pointer hover:bg-neutral-800" onclick="sortTable('Item')">ENTRY NAME ↕</th>
+                                <th class="p-3 cursor-pointer hover:bg-neutral-800" onclick="sortTable('Link')">LINK</th>
+                                <th class="p-3 cursor-pointer hover:bg-neutral-800" onclick="sortTable('Category')">CATEGORY ↕</th>
+                                <th class="p-3 cursor-pointer hover:bg-neutral-800" onclick="sortTable('Urgency')">PRIORITY ↕</th>
+                                <th class="p-3 cursor-pointer hover:bg-neutral-800" onclick="sortTable('Price')">PRICE ↕</th>
+                                <th class="p-3 cursor-pointer hover:bg-neutral-800" onclick="sortTable('Date')">DATE ADDED ↕</th>
+                                <th class="p-3 text-right">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-neutral-200 text-xs font-medium">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. COMPACT TABLE VIEW -->
+            <div id="viewContainerCompact" class="hidden bg-white border border-black overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-neutral-900 text-white text-[9px] font-mono uppercase tracking-widest">
+                                <th class="p-1.5 w-8 text-center">
+                                    <input type="checkbox" onchange="toggleSelectAll(this.checked)" class="w-3.5 h-3.5 cursor-pointer accent-black">
+                                </th>
+                                <th class="p-1.5 w-8 text-center">✓</th>
+                                <th class="p-1.5 font-bold">NAME</th>
+                                <th class="p-1.5">LINK</th>
+                                <th class="p-1.5">CAT</th>
+                                <th class="p-1.5">PRIORITY</th>
+                                <th class="p-1.5">PRICE</th>
+                                <th class="p-1.5">DATE</th>
+                                <th class="p-1.5 text-right">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compactTableBody" class="divide-y divide-neutral-200 text-[11px] font-mono">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. KANBAN BOARD VIEW -->
+            <div id="viewContainerKanban" class="hidden overflow-x-auto pb-4">
+                <div id="kanbanBoard" class="flex gap-4 min-w-[900px]">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <!-- 4. GRID / CARD VIEW -->
+            <div id="viewContainerGrid" class="hidden">
+                <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="groceryDrawer" class="fixed right-0 top-0 h-full w-full sm:w-96 bg-white border-l-2 border-black shadow-2xl z-50 transform translate-x-full drawer-slide flex flex-col">
+        <div class="p-4 bg-black text-white flex justify-between items-center font-mono text-xs">
+            <span class="font-bold uppercase tracking-widest">[SCRATCHPAD / STICKY NOTE]</span>
+            <button onclick="toggleGroceryNote()" class="text-white hover:text-neutral-400 font-bold text-lg">✕</button>
+        </div>
+
+        <div class="p-4 flex-grow flex flex-col bg-[#fffbeb] border-b border-black">
+            <div class="mb-2 flex justify-between items-center text-[10px] font-mono text-amber-800 uppercase">
+                <span>QUICK GROCERY LIST</span>
+                <span>AUTO-SAVED</span>
+            </div>
+            <textarea id="groceryScratchpad" placeholder="Type quick raw notes here...&#10;- Milk 2L&#10;- Sourdough Bread&#10;- Organic Apples&#10;- Olive Oil" class="w-full flex-grow p-3 bg-transparent border border-amber-300 font-mono text-xs leading-relaxed focus:outline-none resize-none text-neutral-800" oninput="saveScratchpad()"></textarea>
+        </div>
+
+        <div class="p-4 bg-neutral-100 border-t border-black space-y-2">
+            <button onclick="clearScratchpad()" class="w-full bg-white hover:bg-neutral-200 border border-black font-mono text-xs uppercase py-2">Clear Scratchpad</button>
+            <p class="text-[10px] font-mono text-neutral-500 text-center">Note persists automatically in local storage.</p>
         </div>
     </div>
 
     <script>
-        // Make sure this matches your deployed Web App URL from Google Sheets
         const API_URL = 'https://script.google.com/macros/s/AKfycbyh6vANg0C6aF3r7qXH7NSqU79kMkEtrqN0JFkry9EZrBznbUwEjmHqzJHTvUMn8I6Crg/exec';
         
         let shoppingItems = [];
+        let selectedIndices = new Set();
+        let currentView = 'table';
         let sortConfig = { key: null, direction: 'asc' };
+        let inlineEditingIndex = null;
         
-        // System baseline categories
         const systemCategories = ['Grocery', 'Household', 'Tech', 'Personal Care', 'Kitchen'];
-        // Separated array specifically tracking additions created by the user
         let userCreatedCategories = JSON.parse(localStorage.getItem('user_categories')) || [];
 
-        // Priority weighting dictionary mapping for logical relational comparisons
         const URGENCY_ORDER = { 'now': 0, 'soon': 1, 'later': 2 };
+        const PRICE_ORDER = { '$': 1, '$$': 2, '$$$': 3, '$$$$': 4, '$$$$$': 5 };
 
         async function fetchData() {
             const statusText = document.getElementById('status-text');
@@ -187,18 +377,17 @@
             const errorMessage = document.getElementById('error-message');
             
             if (spinner) spinner.classList.remove('hidden');
-            if (statusText) statusText.textContent = 'Syncing...';
+            if (statusText) statusText.textContent = 'SYNCING...';
             if (errorBanner) errorBanner.classList.add('hidden');
 
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+                if (!response.ok) throw new Error(`Server status ${response.status}`);
                 const result = await response.json();
                 
                 if (result.status === "success") {
                     shoppingItems = result.data || [];
                     
-                    // Automatically auto-import any values present on sheet that aren't system categories
                     shoppingItems.forEach(item => {
                         const cat = getRowValue(item, 'Category').trim();
                         if (cat && !systemCategories.includes(cat) && !userCreatedCategories.includes(cat)) {
@@ -208,14 +397,14 @@
                     saveUserCategoriesToMemory();
                     
                     updateCategoryDropdowns();
-                    renderTable();
-                    if (statusText) statusText.textContent = 'Synced';
+                    renderCurrentView();
+                    if (statusText) statusText.textContent = 'SYNCED';
                 } else {
-                    throw new Error(result.message || "Unknown API Error");
+                    throw new Error(result.message || "API sync returned an error");
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-                if (statusText) statusText.textContent = 'Sync Error';
+                if (statusText) statusText.textContent = 'SYNC ERR';
                 if (errorBanner) {
                     errorBanner.classList.remove('hidden');
                     errorMessage.textContent = error.message;
@@ -227,10 +416,18 @@
 
         function getRowValue(row, key) {
             if (!row) return '';
+            if (key === 'Link') {
+                return row['Link'] || row['Weblink'] || row['weblink'] || row['link'] || row['URL'] || row['url'] || '';
+            }
+            if (key === 'Price') {
+                return row['Price'] || row['price'] || '$$';
+            }
+            if (key === 'Date') {
+                return row['Date'] || row['date'] || row['Date Added'] || row['date_added'] || '';
+            }
             return row[key] || row[key.toLowerCase()] || row[key.charAt(0).toUpperCase() + key.slice(1)] || '';
         }
 
-        // Helper to evaluate Done checkbox state robustly
         function isItemDone(row) {
             const val = getRowValue(row, 'Done');
             return val === true || val === 'true' || val === 'TRUE';
@@ -240,50 +437,68 @@
             localStorage.setItem('user_categories', JSON.stringify(userCreatedCategories));
         }
 
+        function getAllCategories() {
+            return Array.from(new Set([...systemCategories, ...userCreatedCategories]));
+        }
+
         function updateCategoryDropdowns() {
             const select = document.getElementById('newItemCategory');
+            const filterCat = document.getElementById('filterCategory');
+            const bulkCat = document.getElementById('bulkCategorySelect');
             const panelList = document.getElementById('customCategoriesList');
-            if (!select) return;
 
-            const allCategories = new Set([...systemCategories, ...userCreatedCategories]);
-            const currentVal = select.value;
+            const allCats = getAllCategories();
             
-            select.innerHTML = '';
-            allCategories.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                select.appendChild(opt);
-            });
-            
-            const addOpt = document.createElement('option');
-            addOpt.value = "__NEW__";
-            addOpt.className = "text-blue-600 font-semibold";
-            addOpt.textContent = "+ Add Custom Category...";
-            select.appendChild(addOpt);
-            
-            if (allCategories.has(currentVal)) {
-                select.value = currentVal;
-            } else if (currentVal === "__NEW__") {
-                select.value = "__NEW__";
-            } else {
-                select.value = systemCategories[0];
+            if (select) {
+                const currentVal = select.value;
+                select.innerHTML = '';
+                allCats.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    select.appendChild(opt);
+                });
+                const addOpt = document.createElement('option');
+                addOpt.value = "__NEW__";
+                addOpt.className = "font-bold text-black";
+                addOpt.textContent = "+ ADD CUSTOM CATEGORY...";
+                select.appendChild(addOpt);
+                if (allCats.includes(currentVal)) select.value = currentVal;
             }
 
-            // Render custom side list manager view panel
+            if (filterCat) {
+                const currFilter = filterCat.value;
+                filterCat.innerHTML = `<option value="all">ALL CATEGORIES</option>`;
+                allCats.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.toLowerCase();
+                    opt.textContent = cat.toUpperCase();
+                    filterCat.appendChild(opt);
+                });
+                filterCat.value = currFilter;
+            }
+
+            if (bulkCat) {
+                bulkCat.innerHTML = `<option value="">CHANGE CATEGORY...</option>`;
+                allCats.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat.toUpperCase();
+                    bulkCat.appendChild(opt);
+                });
+            }
+
             if (panelList) {
                 panelList.innerHTML = '';
                 if (userCreatedCategories.length === 0) {
-                    panelList.innerHTML = `<p class="text-slate-400 italic text-xs">No custom categories added yet.</p>`;
+                    panelList.innerHTML = `<p class="text-neutral-400 italic text-xs">No custom categories added.</p>`;
                 } else {
                     userCreatedCategories.forEach(cat => {
                         const div = document.createElement('div');
-                        div.className = "flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-slate-700 font-medium";
+                        div.className = "flex justify-between items-center bg-neutral-50 px-2 py-1 border border-neutral-300 font-mono text-neutral-800";
                         div.innerHTML = `
                             <span>${cat}</span>
-                            <button type="button" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="Delete Category">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
+                            <button type="button" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')" class="text-neutral-400 hover:text-black font-bold p-0.5">✕</button>
                         `;
                         panelList.appendChild(div);
                     });
@@ -292,7 +507,7 @@
         }
 
         function deleteCategory(catName) {
-            if (confirm(`Delete the custom category "${catName}" from your selection list?`)) {
+            if (confirm(`Delete category "${catName}"?`)) {
                 userCreatedCategories = userCreatedCategories.filter(c => c !== catName);
                 saveUserCategoriesToMemory();
                 updateCategoryDropdowns();
@@ -304,8 +519,7 @@
             if (!wrapper) return;
             if (val === '__NEW__') {
                 wrapper.classList.remove('hidden');
-                const customInput = document.getElementById('customCategoryName');
-                if (customInput) customInput.focus();
+                document.getElementById('customCategoryName')?.focus();
             } else {
                 wrapper.classList.add('hidden');
             }
@@ -316,121 +530,139 @@
             if (!input) return;
             const newCat = input.value.trim();
             if (newCat) {
-                const formattedCat = newCat.charAt(0).toUpperCase() + newCat.slice(1);
-                if (!systemCategories.includes(formattedCat) && !userCreatedCategories.includes(formattedCat)) {
-                    userCreatedCategories.push(formattedCat);
+                const formatted = newCat.charAt(0).toUpperCase() + newCat.slice(1);
+                if (!systemCategories.includes(formatted) && !userCreatedCategories.includes(formatted)) {
+                    userCreatedCategories.push(formatted);
                     saveUserCategoriesToMemory();
                 }
                 updateCategoryDropdowns();
                 const select = document.getElementById('newItemCategory');
-                if (select) select.value = formattedCat;
+                if (select) select.value = formatted;
                 input.value = '';
-                const wrapper = document.getElementById('customCategoryInputWrapper');
-                if (wrapper) wrapper.classList.add('hidden');
+                document.getElementById('customCategoryInputWrapper')?.classList.add('hidden');
             }
         }
 
-        function cancelCustomCategory() {
-            const input = document.getElementById('customCategoryName');
-            if (input) input.value = '';
-            const wrapper = document.getElementById('customCategoryInputWrapper');
-            if (wrapper) wrapper.classList.add('hidden');
-            const select = document.getElementById('newItemCategory');
-            if (select) select.value = systemCategories[0];
-        }
+        function getFilteredAndSortedData() {
+            const searchVal = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const urgencyVal = document.getElementById('filterUrgency')?.value || 'all';
+            const categoryVal = document.getElementById('filterCategory')?.value || 'all';
+            const priceVal = document.getElementById('filterPrice')?.value || 'all';
+            const sortVal = document.getElementById('filterSort')?.value || 'default';
 
-        function renderTable() {
-            const body = document.getElementById('tableBody');
-            if (!body) return;
-
-            const searchInput = document.getElementById('searchInput');
-            const filterUrgency = document.getElementById('filterUrgency');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-            const urgencyFilter = filterUrgency ? filterUrgency.value : 'all';
-            
-            body.innerHTML = '';
-            
             let filtered = shoppingItems.filter((row) => {
                 const name = getRowValue(row, 'Item').toLowerCase();
                 const cat = getRowValue(row, 'Category').toLowerCase();
                 const urg = getRowValue(row, 'Urgency').toLowerCase();
-                
-                const matchesSearch = name.includes(searchTerm) || cat.includes(searchTerm);
-                const matchesUrgency = urgencyFilter === 'all' || urg === urgencyFilter;
-                
-                return matchesSearch && matchesUrgency;
+                const price = getRowValue(row, 'Price');
+                const link = getRowValue(row, 'Link').toLowerCase();
+
+                const matchesSearch = name.includes(searchVal) || cat.includes(searchVal) || link.includes(searchVal);
+                const matchesUrgency = urgencyVal === 'all' || urg === urgencyVal;
+                const matchesCategory = categoryVal === 'all' || cat === categoryVal;
+                const matchesPrice = priceVal === 'all' || price === priceVal;
+
+                return matchesSearch && matchesUrgency && matchesCategory && matchesPrice;
             });
 
-            // Smart logical sorting engine implementation
-            if (sortConfig.key) {
+            if (sortVal !== 'default') {
                 filtered.sort((a, b) => {
-                    // Sorting specifically by checked Done status
+                    if (sortVal === 'date-desc') {
+                        return (new Date(getRowValue(b, 'Date') || 0)) - (new Date(getRowValue(a, 'Date') || 0));
+                    }
+                    if (sortVal === 'date-asc') {
+                        return (new Date(getRowValue(a, 'Date') || 0)) - (new Date(getRowValue(b, 'Date') || 0));
+                    }
+                    if (sortVal === 'priority') {
+                        let wA = URGENCY_ORDER[getRowValue(a, 'Urgency').toLowerCase()] ?? 99;
+                        let wB = URGENCY_ORDER[getRowValue(b, 'Urgency').toLowerCase()] ?? 99;
+                        return wA - wB;
+                    }
+                    if (sortVal === 'price') {
+                        let pA = PRICE_ORDER[getRowValue(a, 'Price')] ?? 0;
+                        let pB = PRICE_ORDER[getRowValue(b, 'Price')] ?? 0;
+                        return pB - pA;
+                    }
+                    if (sortVal === 'name') {
+                        return getRowValue(a, 'Item').localeCompare(getRowValue(b, 'Item'));
+                    }
+                    return 0;
+                });
+            } else if (sortConfig.key) {
+                filtered.sort((a, b) => {
                     if (sortConfig.key === 'done') {
-                        let doneA = isItemDone(a) ? 1 : 0;
-                        let doneB = isItemDone(b) ? 1 : 0;
-                        return sortConfig.direction === 'asc' ? doneA - doneB : doneB - doneA;
+                        let dA = isItemDone(a) ? 1 : 0;
+                        let dB = isItemDone(b) ? 1 : 0;
+                        return sortConfig.direction === 'asc' ? dA - dB : dB - dA;
                     }
-
-                    let valA = getRowValue(a, sortConfig.key).toString().trim();
-                    let valB = getRowValue(b, sortConfig.key).toString().trim();
-                    
-                    // Fixed Priority Matrix Sorting logic
-                    if (sortConfig.key === 'Urgency') {
-                        let weightA = URGENCY_ORDER[valA.toLowerCase()] !== undefined ? URGENCY_ORDER[valA.toLowerCase()] : 99;
-                        let weightB = URGENCY_ORDER[valB.toLowerCase()] !== undefined ? URGENCY_ORDER[valB.toLowerCase()] : 99;
-                        return sortConfig.direction === 'asc' ? weightA - weightB : weightB - weightA;
-                    }
-                    
-                    // Fallback to traditional string comparison
-                    valA = valA.toLowerCase();
-                    valB = valB.toLowerCase();
-                    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-                    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                    let vA = getRowValue(a, sortConfig.key).toString().trim().toLowerCase();
+                    let vB = getRowValue(b, sortConfig.key).toString().trim().toLowerCase();
+                    if (vA < vB) return sortConfig.direction === 'asc' ? -1 : 1;
+                    if (vA > vB) return sortConfig.direction === 'asc' ? 1 : -1;
                     return 0;
                 });
             }
 
-            if (filtered.length === 0) {
-                body.innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 italic">No matching items found.</td></tr>`;
-            }
+            return filtered;
+        }
 
-            filtered.forEach((row) => {
-                const globalIndex = shoppingItems.indexOf(row);
-                const tr = document.createElement('tr');
-                const itemName = getRowValue(row, 'Item');
-                const category = getRowValue(row, 'Category');
-                const urgency = getRowValue(row, 'Urgency').trim() || 'Later';
-                const isDone = isItemDone(row);
-                
-                if (isDone) tr.classList.add('is-done');
-                
-                tr.innerHTML = `
-                    <td class="p-4 text-center">
-                        <div class="flex justify-center items-center">
-                            <input type="checkbox" ${isDone ? 'checked' : ''} 
-                                   onchange="toggleDone(${globalIndex})" 
-                                   class="w-6 h-6 rounded text-blue-600 border-slate-300 cursor-pointer shadow-sm">
-                        </div>
-                    </td>
-                    <td class="p-4 font-semibold text-slate-800">${itemName || 'Empty Row'}</td>
-                    <td class="p-4 text-slate-500 text-sm font-medium">${category || '-'}</td>
-                    <td class="p-4">
-                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest status-${urgency.toLowerCase()}">
-                            ${urgency}
-                        </span>
-                    </td>
-                    <td class="p-4 text-right space-x-3">
-                        <button onclick="startEdit(${globalIndex})" class="text-slate-400 hover:text-blue-600 transition-all active:scale-110 p-2 inline-flex" title="Edit row">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button onclick="deleteItem(${globalIndex})" class="text-slate-400 hover:text-red-600 transition-all active:scale-110 p-2 inline-flex" title="Delete row">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                    </td>
-                `;
-                body.appendChild(tr);
+        function switchView(viewName) {
+            currentView = viewName;
+            ['table', 'compact', 'kanban', 'grid'].forEach(v => {
+                const container = document.getElementById(`viewContainer${v.charAt(0).toUpperCase() + v.slice(1)}`);
+                const tab = document.getElementById(`view-tab-${v}`);
+                if (container) container.classList.toggle('hidden', v !== viewName);
+                if (tab) {
+                    if (v === viewName) {
+                        tab.className = "px-3 py-1.5 text-xs font-mono uppercase tracking-wider font-semibold transition-all bg-black text-white";
+                    } else {
+                        tab.className = "px-3 py-1.5 text-xs font-mono uppercase tracking-wider font-semibold transition-all text-neutral-600 hover:text-black";
+                    }
+                }
             });
-            updateStats();
+            renderCurrentView();
+        }
+
+        function updateBulkActionBar() {
+            const bar = document.getElementById('bulkActionBar');
+            const countEl = document.getElementById('selectedCount');
+            if (!bar) return;
+
+            if (selectedIndices.size > 0) {
+                bar.classList.remove('hidden');
+                if (countEl) countEl.textContent = selectedIndices.size;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        function toggleSelectRow(index) {
+            if (selectedIndices.has(index)) {
+                selectedIndices.delete(index);
+            } else {
+                selectedIndices.add(index);
+            }
+            renderCurrentView();
+        }
+
+        function toggleSelectAll(checked) {
+            const data = getFilteredAndSortedData();
+            if (checked) {
+                data.forEach(row => {
+                    const globalIndex = shoppingItems.indexOf(row);
+                    if (globalIndex !== -1) selectedIndices.add(globalIndex);
+                });
+            } else {
+                selectedIndices.clear();
+            }
+            renderCurrentView();
+        }
+
+        function clearSelections() {
+            selectedIndices.clear();
+            const selectAllCb = document.getElementById('selectAllCheckbox');
+            if (selectAllCb) selectAllCb.checked = false;
+            renderCurrentView();
         }
 
         function sortTable(key) {
@@ -440,59 +672,471 @@
                 sortConfig.key = key;
                 sortConfig.direction = 'asc';
             }
-            renderTable();
+            const filterSort = document.getElementById('filterSort');
+            if (filterSort) filterSort.value = 'default';
+            renderCurrentView();
+        }
+
+        function renderCurrentView() {
+            const data = getFilteredAndSortedData();
+            updateStats();
+            updateBulkActionBar();
+
+            if (currentView === 'table') renderTableView(data);
+            else if (currentView === 'compact') renderCompactView(data);
+            else if (currentView === 'kanban') renderKanbanView(data);
+            else if (currentView === 'grid') renderGridView(data);
+        }
+
+        function renderTableView(data) {
+            const body = document.getElementById('tableBody');
+            if (!body) return;
+            body.innerHTML = '';
+
+            if (data.length === 0) {
+                body.innerHTML = `<tr><td colspan="9" class="p-8 text-center font-mono text-neutral-400 uppercase tracking-widest">[ No entries match current filter parameters ]</td></tr>`;
+                return;
+            }
+
+            data.forEach((row) => {
+                const globalIndex = shoppingItems.indexOf(row);
+                const tr = document.createElement('tr');
+                const itemName = getRowValue(row, 'Item');
+                const category = getRowValue(row, 'Category');
+                const urgency = getRowValue(row, 'Urgency').trim() || 'Later';
+                const price = getRowValue(row, 'Price') || '$$';
+                const dateVal = getRowValue(row, 'Date');
+                const linkVal = getRowValue(row, 'Link');
+                const isDone = isItemDone(row);
+                const isSelected = selectedIndices.has(globalIndex);
+
+                if (inlineEditingIndex === globalIndex) {
+                    tr.className = "bg-neutral-100 border-2 border-black font-mono";
+                    const categoriesOptions = getAllCategories().map(c => 
+                        `<option value="${c}" ${c.toLowerCase() === category.toLowerCase() ? 'selected' : ''}>${c}</option>`
+                    ).join('');
+
+                    tr.innerHTML = `
+                        <td class="p-2 text-center font-bold text-xs">EDIT</td>
+                        <td class="p-2 text-center">
+                            <input type="checkbox" ${isDone ? 'checked' : ''} id="inline-done-${globalIndex}" class="w-4 h-4 cursor-pointer accent-black">
+                        </td>
+                        <td class="p-2">
+                            <input type="text" id="inline-item-${globalIndex}" value="${itemName.replace(/"/g, '&quot;')}" class="w-full px-2 py-1 border border-black font-sans text-xs font-bold outline-none">
+                        </td>
+                        <td class="p-2">
+                            <input type="url" id="inline-link-${globalIndex}" value="${linkVal.replace(/"/g, '&quot;')}" placeholder="https://..." class="w-full px-2 py-1 border border-black text-[11px] outline-none">
+                        </td>
+                        <td class="p-2">
+                            <select id="inline-category-${globalIndex}" class="w-full px-1 py-1 border border-black text-[11px] bg-white outline-none">
+                                ${categoriesOptions}
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <select id="inline-urgency-${globalIndex}" class="w-full px-1 py-1 border border-black text-[11px] bg-white font-bold outline-none">
+                                <option value="Now" ${urgency.toLowerCase() === 'now' ? 'selected' : ''}>Now</option>
+                                <option value="Soon" ${urgency.toLowerCase() === 'soon' ? 'selected' : ''}>Soon</option>
+                                <option value="Later" ${urgency.toLowerCase() === 'later' ? 'selected' : ''}>Later</option>
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <select id="inline-price-${globalIndex}" class="w-full px-1 py-1 border border-black text-[11px] bg-white font-bold outline-none">
+                                <option value="$" ${price === '$' ? 'selected' : ''}>$</option>
+                                <option value="$$" ${price === '$$' ? 'selected' : ''}>$$</option>
+                                <option value="$$$" ${price === '$$$' ? 'selected' : ''}>$$$</option>
+                                <option value="$$$$" ${price === '$$$$' ? 'selected' : ''}>$$$$</option>
+                                <option value="$$$$$" ${price === '$$$$$' ? 'selected' : ''}>$$$$$</option>
+                            </select>
+                        </td>
+                        <td class="p-2 text-neutral-400 text-[11px]">${dateVal || '-'}</td>
+                        <td class="p-2 text-right space-x-1">
+                            <button onclick="saveInlineEdit(${globalIndex})" class="bg-black text-white hover:bg-neutral-800 px-2 py-1 font-bold text-[10px] uppercase">SAVE</button>
+                            <button onclick="cancelInlineEdit()" class="bg-neutral-200 hover:bg-neutral-300 text-black px-2 py-1 font-bold text-[10px] uppercase">CANCEL</button>
+                        </td>
+                    `;
+                } else {
+                    if (isDone) tr.classList.add('is-done');
+                    if (isSelected) tr.classList.add('bg-neutral-100');
+
+                    tr.innerHTML = `
+                        <td class="p-3 text-center">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectRow(${globalIndex})" class="w-4 h-4 cursor-pointer accent-black">
+                        </td>
+                        <td class="p-3 text-center">
+                            <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone(${globalIndex})" class="w-4 h-4 cursor-pointer accent-black">
+                        </td>
+                        <td class="p-3 font-bold text-neutral-900 text-xs sm:text-sm">${itemName || 'Untitled'}</td>
+                        <td class="p-3 font-mono">
+                            ${linkVal ? `<a href="${linkVal}" target="_blank" rel="noopener noreferrer" class="underline text-black font-semibold hover:bg-black hover:text-white px-1.5 py-0.5 border border-black inline-flex items-center gap-1 text-[11px]">Access Here ↗</a>` : '<span class="text-neutral-300">—</span>'}
+                        </td>
+                        <td class="p-3 font-mono text-neutral-700 font-semibold uppercase text-[11px]">${category || '-'}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider status-${urgency.toLowerCase()}">
+                                ${urgency}
+                            </span>
+                        </td>
+                        <td class="p-3 font-mono font-bold text-neutral-900">${price}</td>
+                        <td class="p-3 font-mono text-neutral-500 text-[11px]">${dateVal || '-'}</td>
+                        <td class="p-3 text-right space-x-1 font-mono">
+                            <button onclick="startEdit(${globalIndex})" class="bg-neutral-100 hover:bg-black hover:text-white border border-black font-bold uppercase text-[11px] px-2 py-1">EDIT</button>
+                            <button onclick="deleteItem(${globalIndex})" class="text-neutral-500 hover:text-red-600 font-bold uppercase text-[11px] px-1.5 py-1">DEL</button>
+                        </td>
+                    `;
+                }
+                body.appendChild(tr);
+            });
+        }
+
+        function renderCompactView(data) {
+            const body = document.getElementById('compactTableBody');
+            if (!body) return;
+            body.innerHTML = '';
+
+            if (data.length === 0) {
+                body.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-neutral-400 uppercase tracking-widest">[ No entries found ]</td></tr>`;
+                return;
+            }
+
+            data.forEach(row => {
+                const globalIndex = shoppingItems.indexOf(row);
+                const tr = document.createElement('tr');
+                const itemName = getRowValue(row, 'Item');
+                const category = getRowValue(row, 'Category');
+                const urgency = getRowValue(row, 'Urgency').trim() || 'Later';
+                const price = getRowValue(row, 'Price') || '$$';
+                const dateVal = getRowValue(row, 'Date');
+                const linkVal = getRowValue(row, 'Link');
+                const isDone = isItemDone(row);
+                const isSelected = selectedIndices.has(globalIndex);
+
+                if (isDone) tr.classList.add('is-done');
+                if (isSelected) tr.classList.add('bg-neutral-100');
+
+                tr.innerHTML = `
+                    <td class="p-2 text-center">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectRow(${globalIndex})" class="w-3.5 h-3.5 cursor-pointer accent-black">
+                    </td>
+                    <td class="p-2 text-center">
+                        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone(${globalIndex})" class="w-3.5 h-3.5 cursor-pointer accent-black">
+                    </td>
+                    <td class="p-2 font-bold text-neutral-900">${itemName || 'Untitled'}</td>
+                    <td class="p-2">
+                        ${linkVal ? `<a href="${linkVal}" target="_blank" rel="noopener noreferrer" class="underline text-black hover:bg-black hover:text-white px-1 py-0.5 border border-black">Access Here ↗</a>` : '-'}
+                    </td>
+                    <td class="p-2 text-neutral-600 uppercase text-[10px]">${category || '-'}</td>
+                    <td class="p-2">
+                        <span class="px-1.5 py-0.5 text-[9px] font-bold uppercase status-${urgency.toLowerCase()}">${urgency}</span>
+                    </td>
+                    <td class="p-2 font-bold">${price}</td>
+                    <td class="p-2 text-neutral-400 text-[10px]">${dateVal || '-'}</td>
+                    <td class="p-2 text-right space-x-1">
+                        <button onclick="startEdit(${globalIndex})" class="hover:underline font-bold text-[10px]">EDIT</button>
+                        <button onclick="deleteItem(${globalIndex})" class="text-neutral-500 hover:text-red-600 font-bold text-[10px]">DEL</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function renderKanbanView(data) {
+            const board = document.getElementById('kanbanBoard');
+            if (!board) return;
+            board.innerHTML = '';
+
+            const categories = getAllCategories();
+            
+            categories.forEach(cat => {
+                const catItems = data.filter(item => getRowValue(item, 'Category').toLowerCase() === cat.toLowerCase());
+                
+                const column = document.createElement('div');
+                column.className = "flex-1 min-w-[280px] max-w-[340px] bg-white border border-black p-3 flex flex-col gap-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]";
+                
+                let cardsHtml = '';
+                if (catItems.length === 0) {
+                    cardsHtml = `<div class="p-4 border border-dashed border-neutral-300 text-center text-xs text-neutral-400 font-mono uppercase">EMPTY CATEGORY</div>`;
+                } else {
+                    catItems.forEach(item => {
+                        const globalIndex = shoppingItems.indexOf(item);
+                        const itemName = getRowValue(item, 'Item');
+                        const urgency = getRowValue(item, 'Urgency').trim() || 'Later';
+                        const price = getRowValue(item, 'Price') || '$$';
+                        const linkVal = getRowValue(item, 'Link');
+                        const isDone = isItemDone(item);
+                        const isSelected = selectedIndices.has(globalIndex);
+
+                        cardsHtml += `
+                            <div class="p-3 border border-black bg-white ${isDone ? 'is-done bg-neutral-50' : ''} ${isSelected ? 'border-2 border-black bg-neutral-100' : ''} transition-all space-y-2">
+                                <div class="flex justify-between items-start gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone(${globalIndex})" class="w-4 h-4 cursor-pointer accent-black">
+                                        <span class="font-bold text-xs ${isDone ? 'line-through text-neutral-400' : 'text-black'}">${itemName}</span>
+                                    </div>
+                                    <span class="px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase status-${urgency.toLowerCase()}">${urgency}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-[10px] font-mono pt-1 border-t border-neutral-200">
+                                    <span class="font-bold text-neutral-700">${price}</span>
+                                    ${linkVal ? `<a href="${linkVal}" target="_blank" class="underline font-bold text-black hover:bg-black hover:text-white px-1">Access Here ↗</a>` : ''}
+                                </div>
+                                <div class="flex justify-between items-center pt-1 font-mono text-[10px]">
+                                    <label class="inline-flex items-center gap-1 text-neutral-500 cursor-pointer">
+                                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectRow(${globalIndex})" class="w-3 h-3 accent-black">
+                                        Select
+                                    </label>
+                                    <div class="space-x-1">
+                                        <button onclick="startEdit(${globalIndex})" class="font-bold underline hover:text-black">EDIT</button>
+                                        <button onclick="deleteItem(${globalIndex})" class="font-bold text-neutral-400 hover:text-red-600">DEL</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                column.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-black pb-2">
+                        <h4 class="font-mono text-xs font-extrabold uppercase tracking-wider text-black">${cat}</h4>
+                        <span class="font-mono text-xs bg-black text-white px-2 py-0.5 font-bold">${catItems.length}</span>
+                    </div>
+                    <div class="space-y-2.5 overflow-y-auto max-h-[600px] pr-1">${cardsHtml}</div>
+                `;
+                board.appendChild(column);
+            });
+        }
+
+        function renderGridView(data) {
+            const container = document.getElementById('gridContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="col-span-full p-10 bg-white border border-black text-center font-mono text-neutral-400 uppercase tracking-widest">[ NO ENTRIES FOUND ]</div>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const globalIndex = shoppingItems.indexOf(item);
+                const itemName = getRowValue(item, 'Item');
+                const category = getRowValue(item, 'Category');
+                const urgency = getRowValue(item, 'Urgency').trim() || 'Later';
+                const price = getRowValue(item, 'Price') || '$$';
+                const linkVal = getRowValue(item, 'Link');
+                const isDone = isItemDone(item);
+                const isSelected = selectedIndices.has(globalIndex);
+
+                const card = document.createElement('div');
+                card.className = `bg-white border border-black p-4 space-y-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${isDone ? 'is-done opacity-60' : ''} ${isSelected ? 'ring-2 ring-black bg-neutral-50' : ''}`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2 border-b border-neutral-200 pb-2">
+                        <span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase status-${urgency.toLowerCase()}">${urgency}</span>
+                        <span class="font-mono text-xs font-bold text-neutral-800">${price}</span>
+                    </div>
+
+                    <div>
+                        <div class="flex items-start gap-2">
+                            <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone(${globalIndex})" class="mt-1 w-4 h-4 cursor-pointer accent-black">
+                            <h4 class="font-bold text-sm text-black ${isDone ? 'line-through text-neutral-400' : ''}">${itemName || 'Untitled'}</h4>
+                        </div>
+                        <p class="font-mono text-[11px] text-neutral-500 uppercase mt-1 pl-6">${category || 'Uncategorized'}</p>
+                    </div>
+
+                    ${linkVal ? `<div class="pl-6"><a href="${linkVal}" target="_blank" class="inline-block font-mono text-[11px] underline font-semibold text-black hover:bg-black hover:text-white px-1.5 py-0.5 border border-black">Access Here ↗</a></div>` : ''}
+
+                    <div class="pt-2 border-t border-neutral-200 flex justify-between items-center font-mono text-[11px]">
+                        <label class="inline-flex items-center gap-1.5 text-neutral-600 cursor-pointer">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectRow(${globalIndex})" class="w-3.5 h-3.5 accent-black">
+                            SELECT
+                        </label>
+                        <div class="space-x-1">
+                            <button onclick="startEdit(${globalIndex})" class="bg-neutral-100 hover:bg-black hover:text-white border border-black px-2 py-0.5 font-bold uppercase text-[10px]">EDIT</button>
+                            <button onclick="deleteItem(${globalIndex})" class="text-neutral-500 hover:text-red-600 font-bold px-1.5 py-0.5 uppercase text-[10px]">DEL</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
 
         function startEdit(index) {
-            const row = shoppingItems[index];
-            const editRowIndex = document.getElementById('editRowIndex');
-            const newItemName = document.getElementById('newItemName');
-            const newItemCategory = document.getElementById('newItemCategory');
-            const newItemUrgency = document.getElementById('newItemUrgency');
-            const formTitle = document.getElementById('form-title');
-            const btnText = document.getElementById('btn-text');
-            const cancelEditBtn = document.getElementById('cancel-edit');
+            inlineEditingIndex = index;
+            renderCurrentView();
+        }
 
-            if (editRowIndex) editRowIndex.value = index;
-            if (newItemName) newItemName.value = getRowValue(row, 'Item');
-            
-            updateCategoryDropdowns();
-            
-            const editCategory = getRowValue(row, 'Category');
-            if (newItemCategory) newItemCategory.value = editCategory;
-            if (newItemUrgency) newItemUrgency.value = getRowValue(row, 'Urgency');
-            
-            if (formTitle) formTitle.innerText = "Edit Item";
-            if (btnText) btnText.innerText = "Update Row";
-            if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
-            if (newItemName) newItemName.focus();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        function cancelInlineEdit() {
+            inlineEditingIndex = null;
+            renderCurrentView();
+        }
+
+        async function saveInlineEdit(index) {
+            const item = shoppingItems[index];
+            if (!item) return;
+
+            const nameInput = document.getElementById(`inline-item-${index}`);
+            const linkInput = document.getElementById(`inline-link-${index}`);
+            const catSelect = document.getElementById(`inline-category-${index}`);
+            const urgSelect = document.getElementById(`inline-urgency-${index}`);
+            const priceSelect = document.getElementById(`inline-price-${index}`);
+            const doneCheck = document.getElementById(`inline-done-${index}`);
+
+            if (!nameInput || !nameInput.value.trim()) {
+                alert("Item Name cannot be empty.");
+                return;
+            }
+
+            const updatedName = nameInput.value.trim();
+            const updatedLink = linkInput ? linkInput.value.trim() : getRowValue(item, 'Link');
+            const updatedCategory = catSelect ? catSelect.value : getRowValue(item, 'Category');
+            const updatedUrgency = urgSelect ? urgSelect.value : getRowValue(item, 'Urgency');
+            const updatedPrice = priceSelect ? priceSelect.value : getRowValue(item, 'Price');
+            const updatedDone = doneCheck ? doneCheck.checked : isItemDone(item);
+
+            if (item.Item !== undefined) item.Item = updatedName; else item.item = updatedName;
+            if (item.Link !== undefined) item.Link = updatedLink; else item.link = updatedLink;
+            if (item.Category !== undefined) item.Category = updatedCategory; else item.category = updatedCategory;
+            if (item.Urgency !== undefined) item.Urgency = updatedUrgency; else item.urgency = updatedUrgency;
+            if (item.Price !== undefined) item.Price = updatedPrice; else item.price = updatedPrice;
+            if (item.Done !== undefined) item.Done = updatedDone; else item.done = updatedDone;
+
+            inlineEditingIndex = null;
+            renderCurrentView();
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'update',
+                        rowIndex: index,
+                        Item: updatedName,
+                        Category: updatedCategory,
+                        Urgency: updatedUrgency,
+                        Price: updatedPrice,
+                        Date: getRowValue(item, 'Date'),
+                        Link: updatedLink,
+                        Done: updatedDone
+                    })
+                });
+                setTimeout(fetchData, 1500);
+            } catch (error) {
+                console.error("Inline save error:", error);
+            }
+        }
+
+        async function bulkMarkDone(doneStatus) {
+            if (selectedIndices.size === 0) return;
+            const statusText = document.getElementById('status-text');
+            if (statusText) statusText.textContent = 'BULK SYNC...';
+
+            const indices = Array.from(selectedIndices);
+            for (let idx of indices) {
+                const item = shoppingItems[idx];
+                if (item) {
+                    if (item.Done !== undefined) item.Done = doneStatus;
+                    else item.done = doneStatus;
+                    
+                    fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({
+                            action: 'update',
+                            rowIndex: idx,
+                            Item: getRowValue(item, 'Item'),
+                            Category: getRowValue(item, 'Category'),
+                            Urgency: getRowValue(item, 'Urgency'),
+                            Price: getRowValue(item, 'Price'),
+                            Date: getRowValue(item, 'Date'),
+                            Link: getRowValue(item, 'Link'),
+                            Done: doneStatus
+                        })
+                    }).catch(e => console.error(e));
+                }
+            }
+            clearSelections();
+            setTimeout(fetchData, 1500);
+        }
+
+        async function bulkChangeCategory(newCat) {
+            if (!newCat || selectedIndices.size === 0) return;
+            const indices = Array.from(selectedIndices);
+            for (let idx of indices) {
+                const item = shoppingItems[idx];
+                if (item) {
+                    item.Category = newCat;
+                    fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({
+                            action: 'update',
+                            rowIndex: idx,
+                            Item: getRowValue(item, 'Item'),
+                            Category: newCat,
+                            Urgency: getRowValue(item, 'Urgency'),
+                            Price: getRowValue(item, 'Price'),
+                            Date: getRowValue(item, 'Date'),
+                            Link: getRowValue(item, 'Link'),
+                            Done: isItemDone(item)
+                        })
+                    }).catch(e => console.error(e));
+                }
+            }
+            clearSelections();
+            setTimeout(fetchData, 1500);
+        }
+
+        async function bulkChangePrice(newPrice) {
+            if (!newPrice || selectedIndices.size === 0) return;
+            const indices = Array.from(selectedIndices);
+            for (let idx of indices) {
+                const item = shoppingItems[idx];
+                if (item) {
+                    item.Price = newPrice;
+                    fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({
+                            action: 'update',
+                            rowIndex: idx,
+                            Item: getRowValue(item, 'Item'),
+                            Category: getRowValue(item, 'Category'),
+                            Urgency: getRowValue(item, 'Urgency'),
+                            Price: newPrice,
+                            Date: getRowValue(item, 'Date'),
+                            Link: getRowValue(item, 'Link'),
+                            Done: isItemDone(item)
+                        })
+                    }).catch(e => console.error(e));
+                }
+            }
+            clearSelections();
+            setTimeout(fetchData, 1500);
+        }
+
+        async function bulkDelete() {
+            if (selectedIndices.size === 0) return;
+            if (!confirm(`Delete ${selectedIndices.size} selected entries?`)) return;
+
+            const indices = Array.from(selectedIndices).sort((a, b) => b - a);
+            for (let idx of indices) {
+                fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'delete', rowIndex: idx })
+                }).catch(e => console.error(e));
+            }
+            clearSelections();
+            setTimeout(fetchData, 1800);
         }
 
         function resetForm() {
-            const form = document.getElementById('addItemForm');
-            if (form) form.reset();
-
-            const editRowIndex = document.getElementById('editRowIndex');
-            if (editRowIndex) editRowIndex.value = "";
-
-            const formTitle = document.getElementById('form-title');
-            if (formTitle) formTitle.innerText = "Add New Item";
-            
-            const btnText = document.getElementById('btn-text');
-            if (btnText) btnText.innerText = "Add to Sheet";
-            
-            const spinner = document.getElementById('btn-spinner');
-            if (spinner) spinner.classList.add('hidden');
-            
-            const cancelEditBtn = document.getElementById('cancel-edit');
-            if (cancelEditBtn) cancelEditBtn.classList.add('hidden');
-
-            const wrapper = document.getElementById('customCategoryInputWrapper');
-            if (wrapper) wrapper.classList.add('hidden');
+            document.getElementById('addItemForm')?.reset();
+            document.getElementById('editRowIndex').value = "";
+            document.getElementById('form-title').innerText = "[01] Add New Entry";
+            document.getElementById('btn-text').innerText = "SAVE ENTRY TO SHEET";
+            document.getElementById('btn-spinner')?.classList.add('hidden');
+            document.getElementById('cancel-edit')?.classList.add('hidden');
+            document.getElementById('customCategoryInputWrapper')?.classList.add('hidden');
         }
 
-        // Toggles local state optimistically, then sends update call to Sheet
         window.toggleDone = async (index) => {
             const item = shoppingItems[index];
             if (!item) return;
@@ -500,16 +1144,11 @@
             const currentDone = isItemDone(item);
             const newDone = !currentDone;
 
-            // Handle capitalization variations in local state memory optimistically
             if (item.Done !== undefined) item.Done = newDone;
             else if (item.done !== undefined) item.done = newDone;
-            else if (item.DONE !== undefined) item.DONE = newDone;
             else item.Done = newDone;
 
-            renderTable();
-
-            const statusText = document.getElementById('status-text');
-            if (statusText) statusText.textContent = 'Syncing...';
+            renderCurrentView();
 
             try {
                 await fetch(API_URL, {
@@ -521,36 +1160,28 @@
                         Item: getRowValue(item, 'Item'),
                         Category: getRowValue(item, 'Category'),
                         Urgency: getRowValue(item, 'Urgency'),
+                        Price: getRowValue(item, 'Price'),
+                        Date: getRowValue(item, 'Date'),
+                        Link: getRowValue(item, 'Link'),
                         Done: newDone
                     })
                 });
-                // Settle background local sync after brief write-buffer delay
                 setTimeout(fetchData, 1500);
             } catch (error) {
-                console.error("Failed to sync Done status to sheet:", error);
-                // Revert optimistic state back on connection failure
-                if (item.Done !== undefined) item.Done = currentDone;
-                else if (item.done !== undefined) item.done = currentDone;
-                else if (item.DONE !== undefined) item.DONE = currentDone;
-                renderTable();
+                console.error("Toggle error:", error);
             }
         };
 
         async function deleteItem(index) {
-            if (!confirm('Are you sure you want to delete this item?')) return;
-            
-            const statusText = document.getElementById('status-text');
-            if (statusText) statusText.textContent = 'Deleting...';
-            
+            if (!confirm('Are you sure you want to delete this entry?')) return;
             try {
                 await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: JSON.stringify({ action: 'delete', rowIndex: index })
                 });
-                
                 shoppingItems.splice(index, 1);
-                renderTable();
+                renderCurrentView();
                 setTimeout(fetchData, 1500);
             } catch (e) {
                 alert("Delete failed.");
@@ -564,30 +1195,38 @@
                 const btn = document.getElementById('submitBtn');
                 const spinner = document.getElementById('btn-spinner');
                 const btnText = document.getElementById('btn-text');
-                const editRowIndex = document.getElementById('editRowIndex');
-                const newItemName = document.getElementById('newItemName');
-                const newItemCategory = document.getElementById('newItemCategory');
-                const newItemUrgency = document.getElementById('newItemUrgency');
+                const editIndex = document.getElementById('editRowIndex').value;
 
-                const editIndex = editRowIndex ? editRowIndex.value : '';
-                
-                const payload = {
-                    action: editIndex !== "" ? 'update' : 'add',
-                    rowIndex: editIndex !== "" ? parseInt(editIndex) : null,
-                    Item: newItemName ? newItemName.value : '',
-                    Category: newItemCategory ? newItemCategory.value : '',
-                    Urgency: newItemUrgency ? newItemUrgency.value : '',
-                    Done: editIndex !== "" ? isItemDone(shoppingItems[parseInt(editIndex)]) : false
-                };
+                const name = document.getElementById('newItemName').value;
+                const cat = document.getElementById('newItemCategory').value;
+                const urg = document.getElementById('newItemUrgency').value;
+                const price = document.getElementById('newItemPrice').value;
+                const link = document.getElementById('newItemLink').value;
 
-                if (payload.Category === '__NEW__') {
-                    alert('Please type or complete adding your custom category first!');
+                if (cat === '__NEW__') {
+                    alert('Please complete adding your custom category first.');
                     return;
                 }
 
+                const todayFormatted = new Date().toISOString().split('T')[0];
+                const existingDate = editIndex !== "" ? getRowValue(shoppingItems[parseInt(editIndex)], 'Date') : '';
+
+                const payload = {
+                    action: editIndex !== "" ? 'update' : 'add',
+                    rowIndex: editIndex !== "" ? parseInt(editIndex) : null,
+                    Item: name,
+                    Category: cat,
+                    Urgency: urg,
+                    Price: price,
+                    Link: link,
+                    Weblink: link,
+                    Date: existingDate || todayFormatted,
+                    Done: editIndex !== "" ? isItemDone(shoppingItems[parseInt(editIndex)]) : false
+                };
+
                 if (btn) btn.disabled = true;
                 if (spinner) spinner.classList.remove('hidden');
-                if (btnText) btnText.innerText = "Syncing...";
+                if (btnText) btnText.innerText = "SAVING...";
 
                 try {
                     await fetch(API_URL, {
@@ -597,40 +1236,59 @@
                     });
 
                     resetForm();
-                    setTimeout(fetchData, 2000);
+                    setTimeout(fetchData, 1800);
                 } catch (error) {
                     alert('Save failed: ' + error.message);
                 } finally {
                     if (btn) btn.disabled = false;
                     if (spinner) spinner.classList.add('hidden');
-                    if (btnText) {
-                        btnText.innerText = editIndex !== "" ? "Update Row" : "Add to Sheet";
-                    }
+                    if (btnText) btnText.innerText = editIndex !== "" ? "UPDATE ENTRY" : "SAVE ENTRY TO SHEET";
                 }
             });
         }
 
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) searchInput.addEventListener('input', renderTable);
-
-        const filterUrgency = document.getElementById('filterUrgency');
-        if (filterUrgency) filterUrgency.addEventListener('change', renderTable);
+        ['searchInput', 'filterUrgency', 'filterCategory', 'filterPrice', 'filterSort'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', renderCurrentView);
+            if (el) el.addEventListener('change', renderCurrentView);
+        });
 
         function updateStats() {
-            const totalCount = document.getElementById('total-count');
-            const nowCount = document.getElementById('now-count');
-            const doneCount = document.getElementById('done-count');
-
-            if (totalCount) totalCount.innerText = shoppingItems.length;
-            if (nowCount) nowCount.innerText = shoppingItems.filter(i => getRowValue(i, 'Urgency').toLowerCase().trim() === 'now').length;
-            if (doneCount) doneCount.innerText = shoppingItems.filter(i => isItemDone(i)).length;
+            document.getElementById('total-count').innerText = shoppingItems.length;
+            document.getElementById('now-count').innerText = shoppingItems.filter(i => getRowValue(i, 'Urgency').toLowerCase().trim() === 'now').length;
+            document.getElementById('done-count').innerText = shoppingItems.filter(i => isItemDone(i)).length;
         }
 
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        function toggleGroceryNote() {
+            const drawer = document.getElementById('groceryDrawer');
+            if (drawer) {
+                drawer.classList.toggle('translate-x-full');
+            }
+        }
+
+        function saveScratchpad() {
+            const val = document.getElementById('groceryScratchpad')?.value || '';
+            localStorage.setItem('grocery_scratchpad_note', val);
+        }
+
+        function loadScratchpad() {
+            const saved = localStorage.getItem('grocery_scratchpad_note');
+            if (saved !== null && document.getElementById('groceryScratchpad')) {
+                document.getElementById('groceryScratchpad').value = saved;
+            }
+        }
+
+        function clearScratchpad() {
+            if (confirm('Clear scratchpad note?')) {
+                document.getElementById('groceryScratchpad').value = '';
+                localStorage.removeItem('grocery_scratchpad_note');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadScratchpad();
             fetchData();
-        } else {
-            window.addEventListener('DOMContentLoaded', fetchData);
-        }
+        });
     </script>
 </body>
 </html>
